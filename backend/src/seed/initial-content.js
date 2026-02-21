@@ -655,7 +655,11 @@ function idFromEntry(entry) {
 }
 
 function compactIds(values) {
-  return values.filter((value) => typeof value === 'number');
+  return values.filter(
+    (value) =>
+      (typeof value === 'number' && Number.isFinite(value)) ||
+      (typeof value === 'string' && value.trim().length > 0),
+  );
 }
 
 async function seedCountries(strapi, imageCache) {
