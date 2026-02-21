@@ -1,5 +1,7 @@
 'use strict';
 
+const { runInitialContentSeed } = require('./seed/initial-content');
+
 module.exports = {
   /**
    * An asynchronous register function that runs before
@@ -16,5 +18,11 @@ module.exports = {
    * This gives you an opportunity to set up your data model,
    * run jobs, or perform some special logic.
    */
-  bootstrap(/*{ strapi }*/) {},
+  async bootstrap({ strapi }) {
+    try {
+      await runInitialContentSeed(strapi);
+    } catch (error) {
+      strapi.log.error('[seed] Failed to bootstrap initial content', error);
+    }
+  },
 };
