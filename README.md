@@ -1,12 +1,13 @@
-# Vercel + Next.js + Strapi (Postgres) Boilerplate
+# Production-ready Next.js + Strapi + Postgres
 
-Base fullstack setup with:
+This repository contains:
 
-- **Frontend:** Next.js (App Router) in `frontend/`
-- **Backend:** Strapi (Node.js) in `backend/`
-- **Database:** PostgreSQL via Docker
+- **Frontend:** Next.js in `frontend/` (deploy to **Vercel**)
+- **Backend:** Strapi in `backend/` (deploy as a Docker container)
+- **Database:** PostgreSQL
 
-The frontend is ready to deploy on **Vercel**, and the backend is containerized for easy hosting anywhere Docker is available.
+> Important: **Vercel should host the Next.js frontend only.**
+> Strapi is a long-running Node.js server and should be deployed to a container host (Railway, Render, Fly.io, DigitalOcean, ECS, etc.).
 
 ---
 
@@ -14,33 +15,28 @@ The frontend is ready to deploy on **Vercel**, and the backend is containerized 
 
 ```text
 .
-├── frontend/            # Next.js app (deploy this to Vercel)
-├── backend/             # Strapi app (Dockerized)
-└── docker-compose.yml   # Strapi + Postgres local stack
+├── frontend/                # Next.js app
+├── backend/                 # Strapi app
+├── docker-compose.yml       # Local development stack (hot reload)
+├── docker-compose.prod.yml  # Production-like stack
+└── .env.example             # Root env for production compose
 ```
 
 ---
 
-## 1) Run backend (Strapi + Postgres with Docker)
+## Local development
 
-From repository root:
+### 1) Start backend + database
 
 ```bash
 docker compose up --build
 ```
 
-Services:
-
 - Strapi: `http://localhost:1337`
-- Postgres: `localhost:5432` (`strapi/strapi`, db: `strapi`)
+- Postgres: `localhost:5432`
+- Health check: `GET http://localhost:1337/api/health`
 
-Health endpoint:
-
-- `GET http://localhost:1337/api/health`
-
----
-
-## 2) Run frontend (Next.js)
+### 2) Start frontend
 
 ```bash
 cd frontend
@@ -48,27 +44,52 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Frontend:
-
-- `http://localhost:3000`
-
-The homepage checks Strapi health and shows connection status.
+Frontend: `http://localhost:3000`
 
 ---
 
-## 3) Deploy frontend to Vercel
+## Production backend deployment (Docker)
 
-1. Import this repository in Vercel.
-2. In project settings, set **Root Directory** to `frontend`.
-3. Set environment variable:
-   - `NEXT_PUBLIC_STRAPI_URL=https://your-strapi-domain`
+### 1) Prepare environment files
+
+```bash
+cp .env.example .env
+cp backend/.env.production.example backend/.env.production
+```
+
+Update these values before deploying:
+
+- `POSTGRES_PASSWORD` in root `.env`
+- all Strapi secrets in `backend/.env.production` (`APP_KEYS`, `JWT_SECRET`, etc.)
+- `PUBLIC_URL` in `backend/.env.production` (your backend URL)
+- `CORS_ORIGIN` in `backend/.env.production` (your Vercel frontend URL)
+
+### 2) Run production stack
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+This uses:
+
+- multi-stage production build (`backend/Dockerfile`, `target: production`)
+- Strapi `npm run start`
+- persistent Postgres volume
+
+---
+
+## Deploy frontend to Vercel
+
+### Option A: Vercel UI (recommended)
+
+1. Import repository into Vercel.
+2. Set **Root Directory** to `frontend`.
+3. Set environment variables:
+   - `NEXT_PUBLIC_STRAPI_URL=https://your-backend-domain`
+   - `STRAPI_URL=https://your-backend-domain` (optional server-side override)
 4. Deploy.
 
-Optional server-side override:
-
-- `STRAPI_URL=https://your-strapi-domain`
-
-CLI alternative:
+### Option B: Vercel CLI
 
 ```bash
 npx vercel --cwd frontend
@@ -77,10 +98,10 @@ npx vercel --prod --cwd frontend
 
 ---
 
-## Backend Docker notes
+## Production checklist
 
-- Backend image definition: `backend/Dockerfile`
-- Local development stack: `docker-compose.yml`
-- Strapi uses PostgreSQL by default (`backend/config/database.js`)
-
-For production, deploy the backend container and a managed PostgreSQL instance, then point Vercel frontend env vars to that backend URL.
+- [ ] Backend is reachable at `https://your-backend-domain/api/health`
+- [ ] `CORS_ORIGIN` includes your Vercel domain
+- [ ] Frontend env vars in Vercel point to backend URL
+- [ ] Strapi secrets are rotated from template values
+- [ ] Postgres data is persisted and backed up
