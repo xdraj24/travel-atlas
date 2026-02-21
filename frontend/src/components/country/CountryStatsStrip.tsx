@@ -1,0 +1,40 @@
+import { formatCurrency, type Country } from "@/lib/api";
+
+interface CountryStatsStripProps {
+  country: Country;
+}
+
+export function CountryStatsStrip({ country }: CountryStatsStripProps) {
+  const items = [
+    {
+      label: "Avg direct flight",
+      value: formatCurrency(country.avgDirectFlightPrice),
+    },
+    {
+      label: "Avg cheap flight",
+      value: formatCurrency(country.avgCheapFlightPrice),
+    },
+    {
+      label: "Accommodation / night",
+      value: formatCurrency(country.avgAccommodationPrice),
+    },
+    {
+      label: "Food / day",
+      value: formatCurrency(country.avgFoodPricePerDay),
+    },
+  ];
+
+  return (
+    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className="rounded-xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+        >
+          <p className="text-xs uppercase tracking-wide text-stone-500">{item.label}</p>
+          <p className="mt-2 text-lg font-semibold text-stone-900">{item.value}</p>
+        </div>
+      ))}
+    </section>
+  );
+}

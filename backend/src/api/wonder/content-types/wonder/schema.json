@@ -1,0 +1,77 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wonders",
+  "info": {
+    "singularName": "wonder",
+    "pluralName": "wonders",
+    "displayName": "Wonder",
+    "description": "Curated wonders of the world"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "shortDescription": {
+      "type": "text"
+    },
+    "fullDescription": {
+      "type": "richtext"
+    },
+    "heroImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "country": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::country.country",
+      "inversedBy": "wonders"
+    },
+    "locationLat": {
+      "type": "decimal"
+    },
+    "locationLng": {
+      "type": "decimal"
+    },
+    "hikingDifficulty": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "altitudeMeters": {
+      "type": "integer"
+    },
+    "pregnancySafe": {
+      "type": "boolean",
+      "default": true
+    },
+    "infantSafe": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.tag"
+    },
+    "hikes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::hike.hike",
+      "mappedBy": "wonder"
+    }
+  }
+}

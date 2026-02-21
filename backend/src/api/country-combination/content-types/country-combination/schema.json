@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "country_combinations",
+  "info": {
+    "singularName": "country-combination",
+    "pluralName": "country-combinations",
+    "displayName": "Country Combination",
+    "description": "Recommended country combinations"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "countries": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::country.country"
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "minDays": {
+      "type": "integer",
+      "min": 1
+    },
+    "optimalDays": {
+      "type": "integer",
+      "min": 1
+    },
+    "routeDescription": {
+      "type": "richtext"
+    }
+  }
+}

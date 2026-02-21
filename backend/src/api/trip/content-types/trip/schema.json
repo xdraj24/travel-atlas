@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "trips",
+  "info": {
+    "singularName": "trip",
+    "pluralName": "trips",
+    "displayName": "Trip",
+    "description": "Specialist-led trips"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "specialist": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::specialist.specialist",
+      "inversedBy": "trips",
+      "required": true
+    },
+    "country": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::country.country",
+      "required": true
+    },
+    "durationDays": {
+      "type": "integer",
+      "min": 1
+    },
+    "price": {
+      "type": "decimal"
+    },
+    "difficulty": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "maxGroupSize": {
+      "type": "integer",
+      "min": 1
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "startDates": {
+      "type": "component",
+      "repeatable": true,
+      "component": "shared.start-date"
+    }
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "kind": "collectionType",
+  "collectionName": "countries",
+  "info": {
+    "singularName": "country",
+    "pluralName": "countries",
+    "displayName": "Country",
+    "description": "Country and state travel destination metadata"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "isoCode": {
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 3
+    },
+    "heroImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "description": {
+      "type": "richtext"
+    },
+    "hikingLevel": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "beachLevel": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "roadtripLevel": {
+      "type": "integer",
+      "min": 1,
+      "max": 5
+    },
+    "minDays": {
+      "type": "integer",
+      "min": 1
+    },
+    "optimalDays": {
+      "type": "integer",
+      "min": 1
+    },
+    "avgDirectFlightPrice": {
+      "type": "decimal"
+    },
+    "avgCheapFlightPrice": {
+      "type": "decimal"
+    },
+    "avgAccommodationPrice": {
+      "type": "decimal"
+    },
+    "avgFoodPricePerDay": {
+      "type": "decimal"
+    },
+    "pregnancySafe": {
+      "type": "boolean",
+      "default": true
+    },
+    "infantSafe": {
+      "type": "boolean",
+      "default": true
+    },
+    "isState": {
+      "type": "boolean",
+      "default": false
+    },
+    "geoJson": {
+      "type": "json"
+    },
+    "parentCountry": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::country.country",
+      "inversedBy": "regions"
+    },
+    "regions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::country.country",
+      "mappedBy": "parentCountry"
+    },
+    "bestCombinedWith": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::country.country"
+    },
+    "wonders": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::wonder.wonder",
+      "mappedBy": "country"
+    },
+    "hikes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::hike.hike",
+      "mappedBy": "country"
+    },
+    "attractions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::attraction.attraction",
+      "mappedBy": "country"
+    },
+    "specialists": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::specialist.specialist",
+      "inversedBy": "featuredInCountries"
+    }
+  }
+}
