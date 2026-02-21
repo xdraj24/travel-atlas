@@ -29,7 +29,12 @@ export interface CountrySummary {
   roadtripLevel?: number;
   minDays?: number;
   optimalDays?: number;
+  avgAccommodationPrice?: number;
+  avgFoodPricePerDay?: number;
+  pregnancySafe?: boolean;
+  infantSafe?: boolean;
   heroImage?: MediaAsset | null;
+  wonders?: WonderSummary[];
 }
 
 export interface HikeSummary {
@@ -285,7 +290,12 @@ function parseCountrySummary(value: unknown): CountrySummary | null {
     roadtripLevel: toNumberValue(entity.roadtripLevel),
     minDays: toNumberValue(entity.minDays),
     optimalDays: toNumberValue(entity.optimalDays),
+    avgAccommodationPrice: toNumberValue(entity.avgAccommodationPrice),
+    avgFoodPricePerDay: toNumberValue(entity.avgFoodPricePerDay),
+    pregnancySafe: toBooleanValue(entity.pregnancySafe),
+    infantSafe: toBooleanValue(entity.infantSafe),
     heroImage: parseMedia(entity.heroImage),
+    wonders: parseWonderArray(entity.wonders),
   };
 }
 
@@ -657,6 +667,11 @@ export async function fetchCountries(
     sort: ["name:asc"],
     populate: {
       heroImage: true,
+      wonders: {
+        populate: {
+          heroImage: true,
+        },
+      },
     },
   };
 
