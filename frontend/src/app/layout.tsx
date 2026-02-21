@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Travel Platform Alpha",
-  description: "Interactive travel discovery platform powered by Strapi.",
+  title: "Adventure Atlas",
+  description: "Curated adventure travel atlas with interactive world map discovery.",
 };
 
 export default function RootLayout({

@@ -8,6 +8,12 @@
   --earth-500: #8f7b57;
   --earth-300: #bba98a;
   --earth-100: #e7decf;
+  --atlas-bg: #121614;
+  --atlas-ocean: #1f2624;
+  --atlas-glass: #1a1e1c;
+  --atlas-text: #f0f2f0;
+  --atlas-accent: #4e8c5d;
+  --atlas-active: #5da9e9;
 }
 
 html,
@@ -22,7 +28,7 @@ body {
   background:
     radial-gradient(circle at 0% 0%, #f9f5eb 0%, #f6f4ef 45%),
     radial-gradient(circle at 100% 100%, #ebe3d3 0%, #f6f4ef 50%);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
