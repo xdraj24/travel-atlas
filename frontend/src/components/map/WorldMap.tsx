@@ -11,7 +11,8 @@ import MapboxMap, {
   type MapRef,
 } from "react-map-gl/mapbox";
 
-import { stripRichText, type CountrySummary } from "@/lib/api";
+import { type CountrySummary } from "@/lib/api";
+import { CountryPreviewPanel } from "@/components/map/CountryPreviewPanel";
 
 interface WorldMapProps {
   countries: CountrySummary[];
@@ -47,9 +48,17 @@ const geographyUrl =
 
 const WORLD_SOURCE_ID = "world-countries";
 const WORLD_FILL_LAYER_ID = "world-countries-fill";
+const WORLD_GLOW_LAYER_ID = "world-countries-glow";
 const WORLD_STROKE_LAYER_ID = "world-countries-stroke";
 const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/dark-v11";
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const COUNTRY_DEFAULT_FILL = "#526044";
+const COUNTRY_PRIORITY_FILL = "#9f6a3a";
+const COUNTRY_SELECTED_FILL = "#c9a06a";
+const COUNTRY_HOVER_FILL = "#647356";
+
+const featuredCountrySlugs = new Set(["norway", "switzerland", "swiss"]);
+const featuredCountryIso = new Set(["no", "nor", "ch", "che"]);
 
 const worldFillLayer: LayerProps = {
   id: WORLD_FILL_LAYER_ID,
@@ -57,11 +66,41 @@ const worldFillLayer: LayerProps = {
   paint: {
     "fill-color": [
       "case",
-      ["boolean", ["feature-state", "isActive"], false],
-      "#5DA9E9",
-      ["coalesce", ["get", "__fillColor"], "#39403D"],
+      ["boolean", ["feature-state", "isSelected"], false],
+      COUNTRY_SELECTED_FILL,
+      ["boolean", ["feature-state", "isHovered"], false],
+      COUNTRY_HOVER_FILL,
+      ["coalesce", ["get", "__fillColor"], COUNTRY_DEFAULT_FILL],
     ],
-    "fill-opacity": 0.9,
+    "fill-opacity": [
+      "case",
+      ["boolean", ["feature-state", "isSelected"], false],
+      0.98,
+      ["boolean", ["feature-state", "isHovered"], false],
+      0.95,
+      0.9,
+    ],
+  },
+};
+
+const worldGlowLayer: LayerProps = {
+  id: WORLD_GLOW_LAYER_ID,
+  type: "line",
+  paint: {
+    "line-color": COUNTRY_SELECTED_FILL,
+    "line-width": [
+      "case",
+      ["boolean", ["feature-state", "isSelected"], false],
+      6,
+      0,
+    ],
+    "line-opacity": [
+      "case",
+      ["boolean", ["feature-state", "isSelected"], false],
+      0.45,
+      0,
+    ],
+    "line-blur": 1.6,
   },
 };
 
@@ -71,22 +110,23 @@ const worldStrokeLayer: LayerProps = {
   paint: {
     "line-color": [
       "case",
-      ["boolean", ["feature-state", "isActive"], false],
-      "#A5D1F1",
+      ["boolean", ["feature-state", "isSelected"], false],
+      "#F3D7AE",
+      ["boolean", ["feature-state", "isHovered"], false],
+      "#8E9C8F",
       "#26302C",
     ],
     "line-width": [
       "case",
-      ["boolean", ["feature-state", "isActive"], false],
-      1.1,
+      ["boolean", ["feature-state", "isSelected"], false],
+      1.8,
+      ["boolean", ["feature-state", "isHovered"], false],
+      1.05,
       0.55,
     ],
     "line-opacity": 0.95,
   },
 };
-
-const hikingPalette = ["#2A3A32", "#315042", "#3C664E", "#467B5A", "#4E8C5D"];
-const roadtripPalette = ["#5B4037", "#714B3D", "#875542", "#9C5F46", "#B26B4A"];
 
 function normalizeCountryKey(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ");
@@ -109,62 +149,21 @@ function formatScore(value?: number): string {
   return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 }
 
-function isoCodeToFlag(isoCode?: string): string {
-  if (!isoCode || isoCode.length !== 2) return "🌍";
-  return isoCode
-    .toUpperCase()
-    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
-}
-
-function getStayWindow(country: CountrySummary): string {
-  if (country.minDays && country.optimalDays) {
-    return `${country.minDays}-${country.optimalDays} days`;
-  }
-  if (country.optimalDays) return `${country.optimalDays} days`;
-  if (country.minDays) return `${country.minDays}+ days`;
-  return "Flexible";
-}
-
-function getEvocativeLine(country: CountrySummary): string {
-  const cleaned = stripRichText(country.description);
-  const firstSentence = cleaned.split(/[.!?]/)[0]?.trim();
-  if (firstSentence && firstSentence.length >= 24) {
-    return firstSentence;
-  }
-
-  const hiking = country.hikingLevel ?? 0;
-  const roadtrip = country.roadtripLevel ?? 0;
-  if (hiking >= 4 && roadtrip >= 4) {
-    return "Volcanoes, alpine peaks & long, cinematic coastlines";
-  }
-  if (hiking >= 4) {
-    return "Mountain ridgelines, pine forests & remote summit routes";
-  }
-  if (roadtrip >= 4) {
-    return "Sweeping highway arcs, canyon roads & hidden villages";
-  }
-  return "Curated routes, local stories & signature wild landscapes";
-}
-
-function toPaletteColor(score: number, palette: string[]): string {
-  const clamped = Math.max(1, Math.min(5, Math.round(score)));
-  return palette[clamped - 1] ?? palette[0];
-}
-
 function getCountryFill(country: CountrySummary | undefined): string {
-  if (!country) return "#39403D";
+  if (!country) return COUNTRY_DEFAULT_FILL;
 
-  const hiking = country.hikingLevel;
-  const roadtrip = country.roadtripLevel;
-  if (!hiking && !roadtrip) {
-    return "#4A504D";
+  const normalizedName = country.name.trim().toLowerCase();
+  const normalizedIso = country.isoCode?.trim().toLowerCase() ?? "";
+  if (
+    featuredCountrySlugs.has(country.slug.trim().toLowerCase()) ||
+    featuredCountryIso.has(normalizedIso) ||
+    normalizedName.includes("norway") ||
+    normalizedName.includes("swiss") ||
+    normalizedName.includes("switzerland")
+  ) {
+    return COUNTRY_PRIORITY_FILL;
   }
-
-  if ((hiking ?? 0) >= (roadtrip ?? 0)) {
-    return toPaletteColor(hiking ?? 3, hikingPalette);
-  }
-
-  return toPaletteColor(roadtrip ?? 3, roadtripPalette);
+  return COUNTRY_DEFAULT_FILL;
 }
 
 function isFeatureId(value: unknown): value is FeatureId {
@@ -208,7 +207,7 @@ export function WorldMap({ countries }: WorldMapProps) {
   const [selectedFeatureId, setSelectedFeatureId] = useState<FeatureId | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
-  const activeFeatureIdsRef = useRef<Set<FeatureId>>(new Set());
+  const highlightedFeatureIdsRef = useRef<Set<FeatureId>>(new Set());
 
   const countriesByName = useMemo(() => {
     const map = new Map<string, CountrySummary>();
@@ -311,38 +310,41 @@ export function WorldMap({ countries }: WorldMapProps) {
       return;
     }
 
-    const nextActiveIds = new Set<FeatureId>();
+    const nextHighlightedIds = new Set<FeatureId>();
     if (hoveredFeatureId !== null) {
-      nextActiveIds.add(hoveredFeatureId);
+      nextHighlightedIds.add(hoveredFeatureId);
     }
     if (selectedFeatureId !== null) {
-      nextActiveIds.add(selectedFeatureId);
+      nextHighlightedIds.add(selectedFeatureId);
     }
 
-    activeFeatureIdsRef.current.forEach((id) => {
-      if (!nextActiveIds.has(id)) {
-        try {
-          map.setFeatureState({ source: WORLD_SOURCE_ID, id }, { isActive: false });
-        } catch {
-          // Feature may no longer be available after data refresh.
-        }
-      }
-    });
+    const allTouchedIds = new Set<FeatureId>([
+      ...highlightedFeatureIdsRef.current,
+      ...nextHighlightedIds,
+    ]);
 
-    nextActiveIds.forEach((id) => {
+    allTouchedIds.forEach((id) => {
       try {
-        map.setFeatureState({ source: WORLD_SOURCE_ID, id }, { isActive: true });
+        map.setFeatureState(
+          { source: WORLD_SOURCE_ID, id },
+          {
+            isHovered: id === hoveredFeatureId,
+            isSelected: id === selectedFeatureId,
+          },
+        );
       } catch {
         // Feature may no longer be available after data refresh.
       }
     });
 
-    activeFeatureIdsRef.current = nextActiveIds;
+    highlightedFeatureIdsRef.current = nextHighlightedIds;
   }, [hoveredFeatureId, selectedFeatureId, isMapReady, worldGeoJson]);
 
   useEffect(() => {
-    activeFeatureIdsRef.current = new Set();
+    highlightedFeatureIdsRef.current = new Set();
     setHoveredFeatureId(null);
+    setSelectedFeatureId(null);
+    setTooltip(null);
   }, [worldGeoJson]);
 
   useEffect(() => {
@@ -403,6 +405,12 @@ export function WorldMap({ countries }: WorldMapProps) {
       typeof properties.__countrySlug === "string" ? properties.__countrySlug : undefined;
 
     if (!slug || !isFeatureId(feature?.id)) {
+      if (countries.length > 0) {
+        const randomCountry = countries[Math.floor(Math.random() * countries.length)];
+        setSelectedCountry(randomCountry);
+        setSelectedFeatureId(null);
+        setTooltip(null);
+      }
       return;
     }
 
@@ -413,6 +421,7 @@ export function WorldMap({ countries }: WorldMapProps) {
 
     setSelectedCountry(country);
     setSelectedFeatureId(feature.id);
+    setTooltip(null);
   };
 
   const clearSelectedCountry = () => {
@@ -420,32 +429,13 @@ export function WorldMap({ countries }: WorldMapProps) {
     setSelectedFeatureId(null);
   };
 
-  const planTripHref = selectedCountry
-    ? `/countries/${selectedCountry.slug}`
-    : "/specialists";
-
-  const featureCards = selectedCountry
-    ? [
-        {
-          title: "Best Hike",
-          subtitle:
-            selectedCountry.hikingLevel && selectedCountry.hikingLevel >= 4
-              ? "Iconic ridge-to-coast traverse"
-              : "Locally-loved summit day route",
-        },
-        {
-          title: "Best Roadtrip",
-          subtitle:
-            selectedCountry.roadtripLevel && selectedCountry.roadtripLevel >= 4
-              ? "Scenic loop with dramatic viewpoints"
-              : "Hidden villages and panoramic passes",
-        },
-        {
-          title: "Signature Landscape",
-          subtitle: "The terrain this destination is known for",
-        },
-      ]
-    : [];
+  const nudgeZoom = (delta: number) => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    const currentZoom = map.getZoom();
+    const targetZoom = Math.max(1, Math.min(4, currentZoom + delta));
+    map.easeTo({ zoom: targetZoom, duration: 220 });
+  };
 
   return (
     <section className="relative h-[100dvh] min-h-[680px] w-full overflow-hidden bg-[#1F2624]">
@@ -480,6 +470,7 @@ export function WorldMap({ countries }: WorldMapProps) {
             {worldGeoJson ? (
               <Source id={WORLD_SOURCE_ID} type="geojson" data={worldGeoJson} generateId>
                 <Layer {...worldFillLayer} />
+                <Layer {...worldGlowLayer} />
                 <Layer {...worldStrokeLayer} />
               </Source>
             ) : null}
@@ -517,7 +508,27 @@ export function WorldMap({ countries }: WorldMapProps) {
       </header>
 
       <div className="pointer-events-none absolute left-4 top-24 z-30 rounded-xl border border-white/12 bg-[#1A1E1CCC] px-3 py-2 text-[11px] font-medium tracking-wide text-[#A9B2AC] backdrop-blur-[20px] md:left-7 md:top-24">
-        Hover to preview - click to open country profile
+        Hover to preview - click anywhere to build a trip plan
+      </div>
+
+      <div className="absolute right-4 top-24 z-30 flex flex-col overflow-hidden rounded-xl border border-white/12 bg-[#1A1E1CCC] shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-[20px] md:right-7 md:top-24">
+        <button
+          type="button"
+          onClick={() => nudgeZoom(0.55)}
+          className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
+          aria-label="Zoom in"
+        >
+          +
+        </button>
+        <div className="h-px bg-white/10" />
+        <button
+          type="button"
+          onClick={() => nudgeZoom(-0.55)}
+          className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
+          aria-label="Zoom out"
+        >
+          −
+        </button>
       </div>
 
       {tooltip ? (
@@ -536,158 +547,17 @@ export function WorldMap({ countries }: WorldMapProps) {
         </div>
       ) : null}
 
-      <aside
-        className={`absolute bottom-6 left-6 top-24 z-40 hidden w-[min(40vw,30rem)] flex-col rounded-2xl border border-white/14 bg-[#1A1E1CCC] p-5 shadow-[0_28px_60px_rgba(0,0,0,0.45)] backdrop-blur-[20px] transition-all duration-500 md:flex ${
-          selectedCountry
-            ? "translate-x-0 opacity-100"
-            : "-translate-x-[120%] opacity-0 pointer-events-none"
-        }`}
-      >
-        {selectedCountry ? (
-          <>
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-sm font-medium tracking-tight text-[#F0F2F0]">
-                  {isoCodeToFlag(selectedCountry.isoCode)} {selectedCountry.name}
-                </p>
-                <p className="text-sm text-[#B7C1BA]">{getEvocativeLine(selectedCountry)}</p>
-              </div>
-              <button
-                type="button"
-                onClick={clearSelectedCountry}
-                className="rounded-full border border-white/18 px-2 py-1 text-xs text-[#B7C1BA] transition hover:border-white/30 hover:text-[#F0F2F0]"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/12 bg-black/10 p-3">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-[#A8B2AB]">Hiking</p>
-                <p className="mt-1 text-lg font-medium text-[#F0F2F0]">
-                  {formatScore(selectedCountry.hikingLevel)}/5
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/12 bg-black/10 p-3">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-[#A8B2AB]">
-                  Roadtrip
-                </p>
-                <p className="mt-1 text-lg font-medium text-[#F0F2F0]">
-                  {formatScore(selectedCountry.roadtripLevel)}/5
-                </p>
-              </div>
-              <div className="col-span-2 rounded-xl border border-white/12 bg-black/10 p-3">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-[#A8B2AB]">
-                  Optimal stay
-                </p>
-                <p className="mt-1 text-lg font-medium text-[#F0F2F0]">
-                  {getStayWindow(selectedCountry)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              {featureCards.map((item) => (
-                <article
-                  key={item.title}
-                  className="group grid grid-cols-[92px_1fr] gap-3 rounded-xl border border-white/10 bg-black/10 p-2"
-                >
-                  {selectedCountry.heroImage?.url ? (
-                    <img
-                      src={selectedCountry.heroImage.url}
-                      alt={selectedCountry.heroImage.alternativeText ?? selectedCountry.name}
-                      className="h-20 w-[92px] rounded-lg object-cover saturate-[0.88]"
-                    />
-                  ) : (
-                    <div className="h-20 w-[92px] rounded-lg bg-gradient-to-br from-[#345046] to-[#1E2623]" />
-                  )}
-                  <div className="self-center">
-                    <p className="text-sm font-medium text-[#E9ECEA]">{item.title}</p>
-                    <p className="mt-1 text-xs text-[#AEB9B1]">{item.subtitle}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-6 flex flex-col gap-3">
-              <Link
-                href={`/countries/${selectedCountry.slug}`}
-                className="inline-flex items-center justify-center rounded-xl bg-[#4E8C5D] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(78,140,93,0.45)] transition hover:bg-[#5a9c6a]"
-              >
-                Explore Country
-              </Link>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#B5C0B7]">
-                <Link
-                  href="/specialists?type=community_leader"
-                  className="transition hover:text-[#F0F2F0]"
-                >
-                  See Community Trips
-                </Link>
-                <Link href="/specialists" className="transition hover:text-[#F0F2F0]">
-                  Talk to Specialist
-                </Link>
-              </div>
-            </div>
-          </>
-        ) : null}
-      </aside>
-
-      <div
-        className={`absolute inset-x-0 bottom-0 z-40 rounded-t-3xl border border-white/14 bg-[#1A1E1CE6] px-5 pb-6 pt-4 shadow-[0_-24px_50px_rgba(0,0,0,0.45)] backdrop-blur-[20px] transition-transform duration-500 md:hidden ${
-          selectedCountry ? "translate-y-0" : "translate-y-full pointer-events-none"
-        }`}
-      >
-        {selectedCountry ? (
-          <>
-            <div className="mx-auto h-1.5 w-14 rounded-full bg-white/20" />
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-base font-medium text-[#F0F2F0]">
-                {isoCodeToFlag(selectedCountry.isoCode)} {selectedCountry.name}
-              </p>
-              <button
-                type="button"
-                onClick={clearSelectedCountry}
-                className="rounded-full border border-white/18 px-2 py-1 text-xs text-[#B7C1BA]"
-              >
-                Close
-              </button>
-            </div>
-            <p className="mt-2 text-sm text-[#B7C1BA]">{getEvocativeLine(selectedCountry)}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#C5CEC8]">
-              <span className="rounded-full border border-white/12 bg-black/10 px-2 py-1">
-                Hiking {formatScore(selectedCountry.hikingLevel)}/5
-              </span>
-              <span className="rounded-full border border-white/12 bg-black/10 px-2 py-1">
-                Roadtrip {formatScore(selectedCountry.roadtripLevel)}/5
-              </span>
-              <span className="rounded-full border border-white/12 bg-black/10 px-2 py-1">
-                {getStayWindow(selectedCountry)}
-              </span>
-            </div>
-            <Link
-              href={`/countries/${selectedCountry.slug}`}
-              className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[#4E8C5D] px-4 py-3 text-sm font-semibold text-white shadow-[0_8px_25px_rgba(78,140,93,0.45)]"
-            >
-              Explore
-            </Link>
-          </>
-        ) : null}
-      </div>
-
-      <Link
-        href={planTripHref}
-        className="absolute bottom-7 left-1/2 z-30 hidden -translate-x-1/2 items-center justify-center rounded-full bg-[#4E8C5D] px-7 py-3 text-sm font-semibold text-white shadow-[0_16px_35px_rgba(78,140,93,0.45)] transition hover:bg-[#5B9C69] md:inline-flex"
-      >
-        🧭 Plan My Trip
-      </Link>
-
-      <Link
-        href={planTripHref}
-        aria-label="Plan my trip"
-        className="absolute bottom-6 right-5 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#4E8C5D] text-2xl text-white shadow-[0_12px_28px_rgba(78,140,93,0.5)] md:hidden"
-      >
-        🧭
-      </Link>
+      {selectedCountry ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close country preview"
+            onClick={clearSelectedCountry}
+            className="absolute inset-0 z-40 bg-black/10 md:hidden"
+          />
+          <CountryPreviewPanel country={selectedCountry} onClose={clearSelectedCountry} />
+        </>
+      ) : null}
     </section>
   );
 }
