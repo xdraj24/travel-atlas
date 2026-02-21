@@ -171,6 +171,12 @@ function toBooleanValue(value: unknown): boolean | undefined {
   return undefined;
 }
 
+function toEntityId(value: unknown): EntityId | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) return value;
+  return undefined;
+}
+
 function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
@@ -256,7 +262,7 @@ function parseCountrySummary(value: unknown): CountrySummary | null {
   const entity = normalizeEntity(value);
   if (!entity) return null;
 
-  const id = (entity.id as EntityId | undefined) ?? entity.documentId;
+  const id = toEntityId(entity.id) ?? toEntityId(entity.documentId);
   const name = toStringValue(entity.name);
   const slug = toStringValue(entity.slug);
   if (!id || !name || !slug) return null;
@@ -344,7 +350,7 @@ function parseSpecialistSummary(value: unknown): SpecialistSummary | null {
   const entity = normalizeEntity(value);
   if (!entity) return null;
 
-  const id = (entity.id as EntityId | undefined) ?? entity.documentId;
+  const id = toEntityId(entity.id) ?? toEntityId(entity.documentId);
   const name = toStringValue(entity.name);
   const slug = toStringValue(entity.slug);
   const type = toStringValue(entity.type);
@@ -381,7 +387,7 @@ function parseWonderSummary(value: unknown): WonderSummary | null {
   const entity = normalizeEntity(value);
   if (!entity) return null;
 
-  const id = (entity.id as EntityId | undefined) ?? entity.documentId;
+  const id = toEntityId(entity.id) ?? toEntityId(entity.documentId);
   const name = toStringValue(entity.name);
   const slug = toStringValue(entity.slug);
   if (!id || !name || !slug) return null;
@@ -526,7 +532,7 @@ function parseSpecialist(value: unknown): Specialist | null {
 function parseCountryCombination(value: unknown): CountryCombination | null {
   const entity = normalizeEntity(value);
   if (!entity) return null;
-  const id = (entity.id as EntityId | undefined) ?? entity.documentId;
+  const id = toEntityId(entity.id) ?? toEntityId(entity.documentId);
   const name = toStringValue(entity.name);
   const slug = toStringValue(entity.slug);
   if (!id || !name || !slug) return null;

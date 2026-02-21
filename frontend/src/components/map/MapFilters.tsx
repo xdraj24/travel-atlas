@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { type CountryFilters } from "@/lib/filters";
 
 interface MapFiltersProps {
@@ -114,12 +116,12 @@ export function MapFilters({ filters }: MapFiltersProps) {
         >
           Apply filters
         </button>
-        <a
+        <Link
           href="/"
           className="rounded-lg border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 transition hover:bg-stone-50"
         >
           Reset
-        </a>
+        </Link>
       </div>
     </form>
   );
