@@ -10,7 +10,7 @@ npm run dev
 Required env vars:
 
 - `NEXT_PUBLIC_STRAPI_URL` (public URL to Strapi)
-- `STRAPI_URL` (optional server-side override)
+- `NEXT_PUBLIC_STRAPI_KEY` (Strapi API token)
 
 ## Deploy to Vercel
 
