@@ -1,8 +1,15 @@
 "use client";
 
+import type { Feature, FeatureCollection, Geometry } from "geojson";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { useEffect, useMemo, useRef, useState } from "react";
+import MapboxMap, {
+  Layer,
+  Source,
+  type LayerProps,
+  type MapMouseEvent,
+  type MapRef,
+} from "react-map-gl/mapbox";
 
 import { stripRichText, type CountrySummary } from "@/lib/api";
 
@@ -10,11 +17,24 @@ interface WorldMapProps {
   countries: CountrySummary[];
 }
 
-interface GeographyLike {
-  rsmKey: string;
+type FeatureId = string | number;
+
+interface MapFeatureProperties extends Record<string, unknown> {
+  name?: string;
+  NAME?: string;
+  admin?: string;
+  ADMIN?: string;
+  iso_a2?: string;
+  ISO_A2?: string;
+  iso_a3?: string;
+  ISO_A3?: string;
   id?: string | number;
-  properties?: Record<string, unknown>;
+  __countrySlug?: string;
+  __fillColor?: string;
 }
+
+type WorldFeature = Feature<Geometry, MapFeatureProperties>;
+type WorldGeoJson = FeatureCollection<Geometry, MapFeatureProperties>;
 
 interface HoverTooltipState {
   x: number;
@@ -24,6 +44,46 @@ interface HoverTooltipState {
 
 const geographyUrl =
   "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson";
+
+const WORLD_SOURCE_ID = "world-countries";
+const WORLD_FILL_LAYER_ID = "world-countries-fill";
+const WORLD_STROKE_LAYER_ID = "world-countries-stroke";
+const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/dark-v11";
+const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
+const worldFillLayer: LayerProps = {
+  id: WORLD_FILL_LAYER_ID,
+  type: "fill",
+  paint: {
+    "fill-color": [
+      "case",
+      ["boolean", ["feature-state", "isActive"], false],
+      "#5DA9E9",
+      ["coalesce", ["get", "__fillColor"], "#39403D"],
+    ],
+    "fill-opacity": 0.9,
+  },
+};
+
+const worldStrokeLayer: LayerProps = {
+  id: WORLD_STROKE_LAYER_ID,
+  type: "line",
+  paint: {
+    "line-color": [
+      "case",
+      ["boolean", ["feature-state", "isActive"], false],
+      "#A5D1F1",
+      "#26302C",
+    ],
+    "line-width": [
+      "case",
+      ["boolean", ["feature-state", "isActive"], false],
+      1.1,
+      0.55,
+    ],
+    "line-opacity": 0.95,
+  },
+};
 
 const hikingPalette = ["#2A3A32", "#315042", "#3C664E", "#467B5A", "#4E8C5D"];
 const roadtripPalette = ["#5B4037", "#714B3D", "#875542", "#9C5F46", "#B26B4A"];
@@ -91,8 +151,7 @@ function toPaletteColor(score: number, palette: string[]): string {
   return palette[clamped - 1] ?? palette[0];
 }
 
-function getCountryFill(country: CountrySummary | undefined, isActive: boolean): string {
-  if (isActive) return "#5DA9E9";
+function getCountryFill(country: CountrySummary | undefined): string {
   if (!country) return "#39403D";
 
   const hiking = country.hikingLevel;
@@ -108,10 +167,48 @@ function getCountryFill(country: CountrySummary | undefined, isActive: boolean):
   return toPaletteColor(roadtrip ?? 3, roadtripPalette);
 }
 
+function isFeatureId(value: unknown): value is FeatureId {
+  return typeof value === "string" || typeof value === "number";
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function resolveCountryFromProperties(
+  properties: Record<string, unknown>,
+  countriesByIso: Map<string, CountrySummary>,
+  countriesByName: Map<string, CountrySummary>,
+): CountrySummary | undefined {
+  const geoName = getProperty(properties, ["name", "NAME", "admin", "ADMIN"]);
+  const isoCode = getProperty(properties, [
+    "iso_a2",
+    "ISO_A2",
+    "iso_a3",
+    "ISO_A3",
+    "id",
+  ]).toLowerCase();
+
+  if (isoCode && countriesByIso.has(isoCode)) {
+    return countriesByIso.get(isoCode);
+  }
+  if (geoName) {
+    return countriesByName.get(normalizeCountryKey(geoName));
+  }
+  return undefined;
+}
+
 export function WorldMap({ countries }: WorldMapProps) {
-  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<CountrySummary | null>(null);
   const [tooltip, setTooltip] = useState<HoverTooltipState | null>(null);
+  const [rawWorldGeoJson, setRawWorldGeoJson] = useState<WorldGeoJson | null>(null);
+  const [hoveredFeatureId, setHoveredFeatureId] = useState<FeatureId | null>(null);
+  const [selectedFeatureId, setSelectedFeatureId] = useState<FeatureId | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const mapRef = useRef<MapRef | null>(null);
+  const activeFeatureIdsRef = useRef<Set<FeatureId>>(new Set());
 
   const countriesByName = useMemo(() => {
     const map = new Map<string, CountrySummary>();
@@ -131,27 +228,198 @@ export function WorldMap({ countries }: WorldMapProps) {
     return map;
   }, [countries]);
 
-  const resolveCountry = (geography: GeographyLike): CountrySummary | undefined => {
-    const properties = geography.properties ?? {};
-    const geoName = getProperty(properties, ["name", "NAME", "admin", "ADMIN"]);
-    const isoCode = getProperty(properties, [
-      "iso_a2",
-      "ISO_A2",
-      "iso_a3",
-      "ISO_A3",
-      "id",
-    ]).toLowerCase();
+  const countriesBySlug = useMemo(() => {
+    const map = new Map<string, CountrySummary>();
+    countries.forEach((country) => {
+      map.set(country.slug, country);
+    });
+    return map;
+  }, [countries]);
 
-    if (isoCode && countriesByIso.has(isoCode)) {
-      return countriesByIso.get(isoCode);
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadWorldGeoJson(): Promise<void> {
+      try {
+        const response = await fetch(geographyUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch world GeoJSON (${response.status})`);
+        }
+
+        const payload = (await response.json()) as Partial<WorldGeoJson>;
+        if (payload.type !== "FeatureCollection" || !Array.isArray(payload.features)) {
+          throw new Error("Invalid world GeoJSON payload");
+        }
+
+        const normalized: WorldGeoJson = {
+          type: "FeatureCollection",
+          features: payload.features.map((feature, index) => {
+            const withId = {
+              ...feature,
+              id: isFeatureId(feature.id) ? feature.id : index,
+              properties: asRecord(feature.properties) as MapFeatureProperties,
+            };
+            return withId as WorldFeature;
+          }),
+        };
+
+        if (!isCancelled) {
+          setRawWorldGeoJson(normalized);
+        }
+      } catch (error) {
+        console.error("Unable to load world map data", error);
+        if (!isCancelled) {
+          setRawWorldGeoJson({
+            type: "FeatureCollection",
+            features: [],
+          });
+        }
+      }
     }
-    if (geoName) {
-      return countriesByName.get(normalizeCountryKey(geoName));
+
+    void loadWorldGeoJson();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const worldGeoJson = useMemo<WorldGeoJson | null>(() => {
+    if (!rawWorldGeoJson) return null;
+
+    return {
+      type: "FeatureCollection",
+      features: rawWorldGeoJson.features.map((feature) => {
+        const properties = asRecord(feature.properties) as MapFeatureProperties;
+        const country = resolveCountryFromProperties(properties, countriesByIso, countriesByName);
+
+        return {
+          ...feature,
+          properties: {
+            ...properties,
+            __countrySlug: country?.slug,
+            __fillColor: getCountryFill(country),
+          },
+        } as WorldFeature;
+      }),
+    };
+  }, [rawWorldGeoJson, countriesByIso, countriesByName]);
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapReady || !map.getSource(WORLD_SOURCE_ID) || !worldGeoJson) {
+      return;
     }
-    return undefined;
+
+    const nextActiveIds = new Set<FeatureId>();
+    if (hoveredFeatureId !== null) {
+      nextActiveIds.add(hoveredFeatureId);
+    }
+    if (selectedFeatureId !== null) {
+      nextActiveIds.add(selectedFeatureId);
+    }
+
+    activeFeatureIdsRef.current.forEach((id) => {
+      if (!nextActiveIds.has(id)) {
+        try {
+          map.setFeatureState({ source: WORLD_SOURCE_ID, id }, { isActive: false });
+        } catch {
+          // Feature may no longer be available after data refresh.
+        }
+      }
+    });
+
+    nextActiveIds.forEach((id) => {
+      try {
+        map.setFeatureState({ source: WORLD_SOURCE_ID, id }, { isActive: true });
+      } catch {
+        // Feature may no longer be available after data refresh.
+      }
+    });
+
+    activeFeatureIdsRef.current = nextActiveIds;
+  }, [hoveredFeatureId, selectedFeatureId, isMapReady, worldGeoJson]);
+
+  useEffect(() => {
+    activeFeatureIdsRef.current = new Set();
+    setHoveredFeatureId(null);
+  }, [worldGeoJson]);
+
+  useEffect(() => {
+    const currentMap = mapRef.current;
+    return () => {
+      const canvas = currentMap?.getCanvas();
+      if (canvas) {
+        canvas.style.cursor = "";
+      }
+    };
+  }, []);
+
+  const clearHoveredCountry = () => {
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) {
+      canvas.style.cursor = "";
+    }
+    setHoveredFeatureId(null);
+    setTooltip(null);
   };
 
-  const selectedSlug = selectedCountry?.slug;
+  const handleMouseMove = (event: MapMouseEvent) => {
+    const feature = event.features?.[0];
+    const properties = asRecord(feature?.properties);
+    const slug =
+      typeof properties.__countrySlug === "string" ? properties.__countrySlug : undefined;
+
+    if (!slug || !isFeatureId(feature?.id)) {
+      clearHoveredCountry();
+      return;
+    }
+
+    const country = countriesBySlug.get(slug);
+    if (!country) {
+      clearHoveredCountry();
+      return;
+    }
+
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) {
+      canvas.style.cursor = "pointer";
+    }
+
+    setHoveredFeatureId(feature.id);
+
+    const pointerEvent = event.originalEvent as MouseEvent;
+    setTooltip({
+      x: pointerEvent.clientX,
+      y: pointerEvent.clientY,
+      country,
+    });
+  };
+
+  const handleMapClick = (event: MapMouseEvent) => {
+    const feature = event.features?.[0];
+    const properties = asRecord(feature?.properties);
+    const slug =
+      typeof properties.__countrySlug === "string" ? properties.__countrySlug : undefined;
+
+    if (!slug || !isFeatureId(feature?.id)) {
+      return;
+    }
+
+    const country = countriesBySlug.get(slug);
+    if (!country) {
+      return;
+    }
+
+    setSelectedCountry(country);
+    setSelectedFeatureId(feature.id);
+  };
+
+  const clearSelectedCountry = () => {
+    setSelectedCountry(null);
+    setSelectedFeatureId(null);
+  };
+
   const planTripHref = selectedCountry
     ? `/countries/${selectedCountry.slug}`
     : "/specialists";
@@ -190,80 +458,41 @@ export function WorldMap({ countries }: WorldMapProps) {
         }}
       />
 
-      <ComposableMap
-        projectionConfig={{ scale: 154 }}
-        className="relative z-10 h-full w-full"
-        style={{ width: "100%", height: "100%" }}
-      >
-        <Geographies geography={geographyUrl}>
-          {({ geographies }) =>
-            geographies.map((geo) => {
-              const geography = geo as unknown as GeographyLike;
-              const country = resolveCountry(geography);
-              const isHovered = hoveredSlug === country?.slug;
-              const isSelected = selectedSlug === country?.slug;
-              const isActive = isHovered || isSelected;
-
-              return (
-                <Geography
-                  key={geography.rsmKey}
-                  geography={geo}
-                  onMouseEnter={(event) => {
-                    if (!country) return;
-                    setHoveredSlug(country.slug);
-                    setTooltip({
-                      x: event.clientX,
-                      y: event.clientY,
-                      country,
-                    });
-                  }}
-                  onMouseMove={(event) => {
-                    if (!country) return;
-                    setTooltip({
-                      x: event.clientX,
-                      y: event.clientY,
-                      country,
-                    });
-                  }}
-                  onMouseLeave={() => {
-                    setHoveredSlug(null);
-                    setTooltip(null);
-                  }}
-                  onClick={() => {
-                    if (country) {
-                      setSelectedCountry(country);
-                    }
-                  }}
-                  style={{
-                    default: {
-                      fill: getCountryFill(country, isActive),
-                      stroke: isActive ? "#91C7EE" : "#26302C",
-                      strokeWidth: isActive ? 1.1 : 0.55,
-                      outline: "none",
-                      filter: isActive
-                        ? "drop-shadow(0 0 8px rgba(93, 169, 233, 0.65))"
-                        : "none",
-                      transition: "all 220ms ease",
-                    },
-                    hover: {
-                      fill: country ? "#5DA9E9" : "#515855",
-                      stroke: country ? "#A5D1F1" : "#3A4340",
-                      strokeWidth: 1.1,
-                      outline: "none",
-                    },
-                    pressed: {
-                      fill: country ? "#4A90CC" : "#4C5350",
-                      stroke: "#89B8DD",
-                      strokeWidth: 1.1,
-                      outline: "none",
-                    },
-                  }}
-                />
-              );
-            })
-          }
-        </Geographies>
-      </ComposableMap>
+      {mapboxToken ? (
+        <div className="relative z-10 h-full w-full">
+          <MapboxMap
+            ref={mapRef}
+            style={{ width: "100%", height: "100%" }}
+            mapboxAccessToken={mapboxToken}
+            mapStyle={mapboxStyle}
+            initialViewState={{ longitude: 8, latitude: 22, zoom: 1.45 }}
+            minZoom={1}
+            maxZoom={4}
+            dragRotate={false}
+            touchZoomRotate={false}
+            renderWorldCopies={false}
+            interactiveLayerIds={[WORLD_FILL_LAYER_ID]}
+            onLoad={() => setIsMapReady(true)}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={clearHoveredCountry}
+            onClick={handleMapClick}
+          >
+            {worldGeoJson ? (
+              <Source id={WORLD_SOURCE_ID} type="geojson" data={worldGeoJson} generateId>
+                <Layer {...worldFillLayer} />
+                <Layer {...worldStrokeLayer} />
+              </Source>
+            ) : null}
+          </MapboxMap>
+        </div>
+      ) : (
+        <div className="relative z-10 flex h-full w-full items-center justify-center px-6 text-center">
+          <div className="max-w-md rounded-2xl border border-white/20 bg-[#1A1E1CCC] p-5 text-sm text-[#D3DCD6] backdrop-blur-[20px]">
+            Add <code className="rounded bg-black/30 px-1 py-0.5">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code>{" "}
+            to enable the interactive map.
+          </div>
+        </div>
+      )}
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-40 px-4 pt-4 md:px-7 md:pt-6">
         <nav className="pointer-events-auto mx-auto flex w-full max-w-7xl items-center justify-between rounded-full border border-white/14 bg-[#1A1E1CCC] px-4 py-3 shadow-[0_10px_40px_rgba(0,0,0,0.3)] backdrop-blur-[20px] md:px-6">
@@ -325,7 +554,7 @@ export function WorldMap({ countries }: WorldMapProps) {
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedCountry(null)}
+                onClick={clearSelectedCountry}
                 className="rounded-full border border-white/18 px-2 py-1 text-xs text-[#B7C1BA] transition hover:border-white/30 hover:text-[#F0F2F0]"
               >
                 Close
@@ -417,7 +646,7 @@ export function WorldMap({ countries }: WorldMapProps) {
               </p>
               <button
                 type="button"
-                onClick={() => setSelectedCountry(null)}
+                onClick={clearSelectedCountry}
                 className="rounded-full border border-white/18 px-2 py-1 text-xs text-[#B7C1BA]"
               >
                 Close
