@@ -24,6 +24,11 @@ export interface CountrySummary {
   isoCode?: string;
   isState?: boolean;
   description?: string | null;
+  hikingLevel?: number;
+  beachLevel?: number;
+  roadtripLevel?: number;
+  minDays?: number;
+  optimalDays?: number;
   heroImage?: MediaAsset | null;
 }
 
@@ -275,6 +280,11 @@ function parseCountrySummary(value: unknown): CountrySummary | null {
     isoCode: toStringValue(entity.isoCode),
     isState: toBooleanValue(entity.isState),
     description: toStringValue(entity.description) ?? null,
+    hikingLevel: toNumberValue(entity.hikingLevel),
+    beachLevel: toNumberValue(entity.beachLevel),
+    roadtripLevel: toNumberValue(entity.roadtripLevel),
+    minDays: toNumberValue(entity.minDays),
+    optimalDays: toNumberValue(entity.optimalDays),
     heroImage: parseMedia(entity.heroImage),
   };
 }
