@@ -86,7 +86,7 @@ This uses:
 2. Set **Root Directory** to `frontend`.
 3. Set environment variables:
    - `NEXT_PUBLIC_STRAPI_URL=https://your-backend-domain`
-   - `STRAPI_URL=https://your-backend-domain` (optional server-side override)
+   - `NEXT_PUBLIC_STRAPI_KEY=your-strapi-api-token`
 4. Deploy.
 
 ### Option B: Vercel CLI
@@ -102,6 +102,6 @@ npx vercel --prod --cwd frontend
 
 - [ ] Backend is reachable at `https://your-backend-domain/api/health`
 - [ ] `CORS_ORIGIN` includes your Vercel domain
-- [ ] Frontend env vars in Vercel point to backend URL
+- [ ] Frontend env vars in Vercel include Strapi URL + API key
 - [ ] Strapi secrets are rotated from template values
 - [ ] Postgres data is persisted and backed up

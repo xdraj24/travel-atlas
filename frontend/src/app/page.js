@@ -1,21 +1,43 @@
 import styles from "./page.module.css";
 
-const defaultStrapiUrl = "http://localhost:1337";
+function normalizeUrl(url) {
+  return url.replace(/\/+$/, "");
+}
 
 async function getStrapiStatus() {
-  const strapiUrl =
-    process.env.STRAPI_URL ||
-    process.env.NEXT_PUBLIC_STRAPI_URL ||
-    defaultStrapiUrl;
+  const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL || "";
+  const strapiKey = process.env.NEXT_PUBLIC_STRAPI_KEY || "";
+
+  if (!strapiUrl) {
+    return {
+      strapiUrl: "not configured",
+      hasApiKey: Boolean(strapiKey),
+      reachable: false,
+      error: "Missing NEXT_PUBLIC_STRAPI_URL",
+    };
+  }
+
+  if (!strapiKey) {
+    return {
+      strapiUrl,
+      hasApiKey: false,
+      reachable: false,
+      error: "Missing NEXT_PUBLIC_STRAPI_KEY",
+    };
+  }
 
   try {
-    const response = await fetch(`${strapiUrl}/api/health`, {
+    const response = await fetch(`${normalizeUrl(strapiUrl)}/api/health`, {
       cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${strapiKey}`,
+      },
     });
 
     if (!response.ok) {
       return {
         strapiUrl,
+        hasApiKey: true,
         reachable: false,
         error: `Strapi returned HTTP ${response.status}`,
       };
@@ -24,12 +46,14 @@ async function getStrapiStatus() {
     const payload = await response.json();
     return {
       strapiUrl,
+      hasApiKey: true,
       reachable: true,
       payload,
     };
   } catch (error) {
     return {
       strapiUrl,
+      hasApiKey: true,
       reachable: false,
       error: error instanceof Error ? error.message : "Unknown error",
     };
@@ -43,10 +67,10 @@ export default async function Home() {
     <main className={styles.page}>
       <section className={styles.card}>
         <p className={styles.badge}>Next.js + Strapi + PostgreSQL</p>
-        <h1>Vercel-ready frontend with Dockerized backend</h1>
+        <h1>Vercel-ready frontend for external Strapi backend</h1>
         <p className={styles.description}>
-          This starter connects your Next.js frontend to Strapi. Deploy the
-          frontend to Vercel and run the backend with Docker + Postgres.
+          This starter connects your Next.js frontend to a separately deployed
+          Strapi API using URL + API key environment variables.
         </p>
       </section>
 
@@ -55,6 +79,7 @@ export default async function Home() {
         <p>
           URL: <code>{status.strapiUrl}</code>
         </p>
+        <p>API key configured: {status.hasApiKey ? "yes" : "no"}</p>
         {status.reachable ? (
           <p className={styles.ok}>
             Reachable: {status.payload.status} ({status.payload.service})
@@ -68,13 +93,14 @@ export default async function Home() {
         <h2>Quick start</h2>
         <ol>
           <li>
-            Start backend services with <code>docker compose up --build</code>
+            Deploy your Strapi backend separately
           </li>
           <li>
             Run frontend with <code>cd frontend && npm run dev</code>
           </li>
           <li>
-            Set <code>NEXT_PUBLIC_STRAPI_URL</code> in Vercel when deploying
+            Set <code>NEXT_PUBLIC_STRAPI_URL</code> and{" "}
+            <code>NEXT_PUBLIC_STRAPI_KEY</code> in Vercel
           </li>
         </ol>
       </section>
