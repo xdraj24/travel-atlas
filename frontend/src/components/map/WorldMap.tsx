@@ -441,7 +441,7 @@ export function WorldMap({ countries }: WorldMapProps) {
     }
 
     const renderedFeatures =
-      mapRef.current?.queryRenderedFeatures(event.point, {
+      mapRef.current?.queryRenderedFeatures([event.point.x, event.point.y], {
         layers: [WORLD_FILL_LAYER_ID],
       }) ?? [];
 
