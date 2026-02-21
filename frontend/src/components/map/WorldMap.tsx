@@ -8,6 +8,7 @@ import MapboxMap, {
   Source,
   type LayerProps,
   type MapMouseEvent,
+  type MapTouchEvent,
   type MapRef,
 } from "react-map-gl/mapbox";
 
@@ -41,6 +42,17 @@ interface HoverTooltipState {
   x: number;
   y: number;
   country: CountrySummary;
+}
+
+interface MapInteractionEvent {
+  point: {
+    x: number;
+    y: number;
+  };
+  features?: Array<{
+    id?: unknown;
+    properties?: unknown;
+  }>;
 }
 
 const geographyUrl =
@@ -208,6 +220,7 @@ export function WorldMap({ countries }: WorldMapProps) {
   const [isMapReady, setIsMapReady] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const highlightedFeatureIdsRef = useRef<Set<FeatureId>>(new Set());
+  const lastTouchInteractionAtRef = useRef(0);
 
   const countriesByName = useMemo(() => {
     const map = new Map<string, CountrySummary>();
@@ -398,14 +411,57 @@ export function WorldMap({ countries }: WorldMapProps) {
     });
   };
 
-  const handleMapClick = (event: MapMouseEvent) => {
-    const feature = event.features?.[0];
+  const resolveSelectionFromFeature = (
+    feature: { id?: unknown; properties?: unknown } | undefined,
+  ): { country: CountrySummary; featureId: FeatureId | null } | null => {
     const properties = asRecord(feature?.properties);
     const slug =
       typeof properties.__countrySlug === "string" ? properties.__countrySlug : undefined;
+    if (!slug) {
+      return null;
+    }
 
-    if (!slug || !isFeatureId(feature?.id)) {
-      if (countries.length > 0) {
+    const country = countriesBySlug.get(slug);
+    if (!country) {
+      return null;
+    }
+
+    return {
+      country,
+      featureId: isFeatureId(feature?.id) ? feature.id : null,
+    };
+  };
+
+  const resolveSelectionFromMapInteraction = (
+    event: MapInteractionEvent,
+  ): { country: CountrySummary; featureId: FeatureId | null } | null => {
+    const primarySelection = resolveSelectionFromFeature(event.features?.[0]);
+    if (primarySelection) {
+      return primarySelection;
+    }
+
+    const renderedFeatures =
+      mapRef.current?.queryRenderedFeatures(event.point, {
+        layers: [WORLD_FILL_LAYER_ID],
+      }) ?? [];
+
+    for (const renderedFeature of renderedFeatures) {
+      const renderedSelection = resolveSelectionFromFeature(renderedFeature);
+      if (renderedSelection) {
+        return renderedSelection;
+      }
+    }
+
+    return null;
+  };
+
+  const applyMapSelection = (
+    event: MapInteractionEvent,
+    options?: { allowRandomFallback?: boolean },
+  ) => {
+    const selection = resolveSelectionFromMapInteraction(event);
+    if (!selection) {
+      if (options?.allowRandomFallback && countries.length > 0) {
         const randomCountry = countries[Math.floor(Math.random() * countries.length)];
         setSelectedCountry(randomCountry);
         setSelectedFeatureId(null);
@@ -414,14 +470,22 @@ export function WorldMap({ countries }: WorldMapProps) {
       return;
     }
 
-    const country = countriesBySlug.get(slug);
-    if (!country) {
+    setSelectedCountry(selection.country);
+    setSelectedFeatureId(selection.featureId);
+    setTooltip(null);
+  };
+
+  const handleMapClick = (event: MapMouseEvent) => {
+    // A touch sequence can trigger a follow-up click; ignore that synthetic click.
+    if (Date.now() - lastTouchInteractionAtRef.current < 500) {
       return;
     }
+    applyMapSelection(event, { allowRandomFallback: true });
+  };
 
-    setSelectedCountry(country);
-    setSelectedFeatureId(feature.id);
-    setTooltip(null);
+  const handleMapTouchEnd = (event: MapTouchEvent) => {
+    lastTouchInteractionAtRef.current = Date.now();
+    applyMapSelection(event, { allowRandomFallback: false });
   };
 
   const clearSelectedCountry = () => {
@@ -466,6 +530,7 @@ export function WorldMap({ countries }: WorldMapProps) {
             onMouseMove={handleMouseMove}
             onMouseLeave={clearHoveredCountry}
             onClick={handleMapClick}
+            onTouchEnd={handleMapTouchEnd}
           >
             {worldGeoJson ? (
               <Source id={WORLD_SOURCE_ID} type="geojson" data={worldGeoJson} generateId>
@@ -552,7 +617,7 @@ export function WorldMap({ countries }: WorldMapProps) {
           <button
             type="button"
             aria-label="Close country preview"
-            onClick={clearSelectedCountry}
+            onPointerDown={clearSelectedCountry}
             className="absolute inset-0 z-40 bg-black/10 md:hidden"
           />
           <CountryPreviewPanel country={selectedCountry} onClose={clearSelectedCountry} />
