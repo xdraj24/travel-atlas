@@ -73,12 +73,12 @@ const IMAGE_SOURCES = {
   },
 };
 
-const BASE_LOCALE = 'cs';
-const FALLBACK_LOCALE = 'en';
+const BASE_LOCALE = 'en';
+const FALLBACK_LOCALE = 'cs';
 const LOCALES = [BASE_LOCALE, FALLBACK_LOCALE];
 const LOCALE_LABELS = {
-  cs: 'Čeština (cs)',
   en: 'English (en)',
+  cs: 'Čeština (cs)',
 };
 
 const COUNTRY_SEED = [
@@ -747,7 +747,7 @@ function createLocaleMap() {
 }
 
 function getLocalizedSeed(entry, locale, translations, key) {
-  if (locale !== BASE_LOCALE) return entry;
+  if (locale === BASE_LOCALE) return entry;
   const overrides = translations[key];
   if (!overrides) return entry;
   return {
