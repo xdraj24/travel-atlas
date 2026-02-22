@@ -77,7 +77,7 @@ const BASE_LOCALE = 'cs';
 const FALLBACK_LOCALE = 'en';
 const LOCALES = [BASE_LOCALE, FALLBACK_LOCALE];
 const LOCALE_LABELS = {
-  cs: 'Czech (cs)',
+  cs: 'Čeština (cs)',
   en: 'English (en)',
 };
 
@@ -512,171 +512,171 @@ const COUNTRY_COMBINATION_SEED = [
 const CS_TRANSLATIONS = {
   countries: {
     spain: {
-      name: 'Spanelsko',
+      name: 'Španělsko',
       description:
-        'Spanelsko kombinuje atlanticke utesy, stredomorske plaze a horske vnitrozemi. Oblibene trasy propojuji kulturni mesta s narodnimi parky, takze jde o jednu z nejflexibilnejsich evropskych destinaci pro roadtripy i aktivni itinerare.',
+        'Španělsko kombinuje atlantické útesy, středomořské pláže a horské vnitrozemí. Oblíbené trasy propojují kulturní města s národními parky, takže jde o jednu z nejflexibilnějších evropských destinací pro roadtripy i aktivní itineráře.',
     },
     portugal: {
       name: 'Portugalsko',
       description:
-        'Portugalsko je kompaktni a snadno dostupne, s dramatickymi pobreznimi stezkami, plazemi vhodnymi pro surf a vinarskymi roadtripy. Vyborne funguje pro prvni cesty po Evrope se strednim rozpoctem.',
+        'Portugalsko je kompaktní a snadno dostupné, s dramatickými pobřežními stezkami, plážemi vhodnými pro surf a vinařskými roadtripy. Výborně funguje pro první cesty po Evropě se středním rozpočtem.',
     },
     italy: {
-      name: 'Italie',
+      name: 'Itálie',
       description:
-        'Italie nabizi kontrastni itinerare: alpsky trekking na severu, kulturni metropole ve stredu a pobrezni ostrovy na jihu. Je idealni pro cestovatele, kteri chteji kombinovat ikonicke pamatky s outdoorovym dobrodruzstvim.',
+        'Itálie nabízí kontrastní itineráře: alpský trekking na severu, kulturní metropole ve středu a pobřežní ostrovy na jihu. Je ideální pro cestovatele, kteří chtějí kombinovat ikonické památky s outdoorovým dobrodružstvím.',
     },
     france: {
       name: 'Francie',
       description:
-        'Francie podporuje temer kazdy styl cestovani, od alpskych vrcholu pres atlanticka surferska mesta az po vinarske okruhy autem. Vzdalenosti jsou zvladnutelne vlakem i autem, takze planovani vice regionu je jednoduche.',
+        'Francie podporuje téměř každý styl cestování, od alpských vrcholů přes atlantická surferská města až po vinařské okruhy autem. Vzdálenosti jsou zvládnutelné vlakem i autem, takže plánování více regionů je jednoduché.',
     },
     morocco: {
       name: 'Maroko',
       description:
-        'Maroko spojuje treky v pohori Atlas, odpocinek na atlantickem pobrezi a prenocovani na Sahare. Je to silna volba pro dobrodruzne cesty s vysokou rozmanitosti, teplym pocasim a kratsimi lety z jizni Evropy.',
+        'Maroko spojuje treky v pohoří Atlas, odpočinek na atlantickém pobřeží a přenocování na Sahaře. Je to silná volba pro dobrodružné cesty s vysokou rozmanitostí, teplým počasím a kratšími lety z jižní Evropy.',
     },
   },
   regions: {
     catalonia: {
-      name: 'Katalansko',
+      name: 'Katalánsko',
       description:
-        'Katalansko propojuje stredomorske plaze s jednodennimi turami v Pyrenejich a silnou gastronomii kolem Barcelony a Girony.',
+        'Katalánsko propojuje středomořské pláže s jednodenními túrami v Pyrenejích a silnou gastronomii kolem Barcelony a Girony.',
     },
     andalusia: {
       name: 'Andalusie',
       description:
-        'Andalusie je znama bilymi mestecky na kopcich, plazemi v teplem podnebi a snadnym cestovanim autem mezi Sevillou, Granadou a Malagou.',
+        'Andalusie je známá bílými městečky na kopcích, plážemi v teplém podnebí a snadným cestováním autem mezi Sevillou, Granadou a Malagou.',
     },
     'canary-islands': {
-      name: 'Kanarske ostrovy',
+      name: 'Kanárské ostrovy',
       description:
-        'Kanarske ostrovy nabizeji celorocni slunce, sopecnou krajinu a rodinne pristupne itinerare mezi jednotlivymi ostrovy.',
+        'Kanárské ostrovy nabízejí celoroční slunce, sopečnou krajinu a rodinně přístupné itineráře mezi jednotlivými ostrovy.',
     },
   },
   wonders: {
     'teide-national-park': {
-      name: 'Narodni park Teide',
+      name: 'Národní park Teide',
       shortDescription:
-        'Nejvyssi spanelska sopecna krajina s vychody slunce nad vrstvou mraku.',
+        'Nejvyšší španělská sopečná krajina s východy slunce nad vrstvou mraků.',
       fullDescription:
-        'Narodni park Teide je vysokohorsky sopecny ekosystem s lavovymi poli, vyhledy do krateru a permitovymi trasami na vrchol. Nejlepe se hodi pro cestovatele, kteri chteji narocny, ale mimoradne fotogenicky dobrodruzny den.',
-      tags: ['sopka', 'vychod-slunce', 'narodni-park'],
+        'Národní park Teide je vysokohorský sopečný ekosystém s lávovými poli, výhledy do kráteru a permitovými trasami na vrchol. Nejlépe se hodí pro cestovatele, kteří chtějí náročný, ale mimořádně fotogenický dobrodružný den.',
+      tags: ['sopka', 'východ-slunce', 'národní-park'],
     },
     'tre-cime-di-lavaredo': {
       name: 'Tre Cime di Lavaredo',
-      shortDescription: 'Klasicka ikona Dolomit s dramatickymi vapencovymi stity.',
+      shortDescription: 'Klasická ikona Dolomit s dramatickými vápencovými štíty.',
       fullDescription:
-        'Tre Cime patri mezi nejrozpoznatelnejsi alpske sceny v Evrope. Oblast nabizi okruhy od stredne narocnych panoramatickych prochazek az po prudsi hrebenove varianty s vyraznou vyhledovou odmenou.',
+        'Tre Cime patří mezi nejrozpoznatelnější alpské scenérie v Evropě. Oblast nabízí okruhy od středně náročných panoramatických procházek až po prudší hřebenové varianty s výraznou výhledovou odměnou.',
       tags: ['alpy', 'dolomity', 'fotografie'],
     },
     'pena-palace-and-sintra-hills': {
-      name: 'Palac Pena a sintrske kopce',
+      name: 'Palác Pena a sintrské kopce',
       shortDescription:
-        'Lesnate hrebety a historicka architektura na kopcich nedaleko Lisabonu.',
+        'Lesnaté hřebety a historická architektura na kopcích nedaleko Lisabonu.',
       fullDescription:
-        'Sintra kombinuje kratke lesni stezky, scenicke vyhlidky a vyznamnou pamatkovou architekturu. Je idealni pro lehci turisticke dny s kulturnimi zastavkami a snadnym vlakovym spojenim z Lisabonu.',
-      tags: ['les', 'palac', 'jednodenni-vylet'],
+        'Sintra kombinuje krátké lesní stezky, scénické vyhlídky a významnou památkovou architekturu. Je ideální pro lehčí turistické dny s kulturními zastávkami a snadným vlakovým spojením z Lisabonu.',
+      tags: ['les', 'palác', 'jednodenní-výlet'],
     },
   },
   hikes: {
     'Teide Summit Trail': {
-      name: 'Vrcholova trasa Teide',
-      bestSeason: 'Jaro az podzim',
+      name: 'Vrcholová trasa Teide',
+      bestSeason: 'Jaro až podzim',
       description:
-        'Vyrazna vrcholova trasa na povoleni pres sopecny teren se strmym zaverecnym usekem a vybornymi podminkami pro vychod slunce.',
+        'Výrazná vrcholová trasa na povolení přes sopečný terén se strmým závěrečným úsekem a výbornými podmínkami pro východ slunce.',
     },
     'Tre Cime Panorama Circuit': {
-      name: 'Panoramaticky okruh Tre Cime',
-      bestSeason: 'Cerven az zari',
+      name: 'Panoramatický okruh Tre Cime',
+      bestSeason: 'Červen až září',
       description:
-        'Klasicky dolomitsky okruh se sirokymi alpskymi vyhledy a vice rifugio zastavkami vhodny pro rodiny i skupiny s ruznou vykonnosti.',
+        'Klasický dolomitský okruh se širokými alpskými výhledy a více rifugio zastávkami vhodný pro rodiny i skupiny s různou výkonností.',
     },
     'Sintra Ridge and Castle Loop': {
-      name: 'Hrebenovy a zamecky okruh Sintra',
-      bestSeason: 'Celorocne',
+      name: 'Hřebenový a zámecký okruh Sintra',
+      bestSeason: 'Celoročně',
       description:
-        'Stredne lehka trasa mechovitymi lesnimi stezkami propojujici vyhlidky u palace Pena a stare sintrske pesi cesty.',
+        'Středně lehká trasa mechovitými lesními stezkami propojující vyhlídky u paláce Pena a staré sintrské pěší cesty.',
     },
     'Imlil to Toubkal Refuge Approach': {
-      name: 'Vystup z Imlilu k chate Toubkal',
+      name: 'Výstup z Imlilu k chatě Toubkal',
       bestSeason: 'Jaro a podzim',
       description:
-        'Kvalitni aklimatizacni den pres udoli Atlasu a serpentiny, casto vyuzivany pred pokusy o vrchol Jebel Toubkal.',
+        'Kvalitní aklimatizační den přes údolí Atlasu a serpentiny, často využívaný před pokusy o vrchol Jebel Toubkal.',
     },
   },
   attractions: {
     'Costa Brava Coastal Viewpoints': {
-      name: 'Pobrezni vyhlidky Costa Brava',
+      name: 'Pobřežní vyhlídky Costa Brava',
       description:
-        'Fotogenicka rada vyhlidek na utesu a skrytych zatok idealni pro zastavky behem puldenniho roadtripu.',
+        'Fotogenická řada vyhlídek na útesu a skrytých zátok ideální pro zastávky během půldenního roadtripu.',
     },
     'Algarve Sea Caves': {
-      name: 'Morske jeskyne Algarve',
+      name: 'Mořské jeskyně Algarve',
       description:
-        'Jeskyne pristupne lodi a klidne tyrkysove zatoky v okoli Lagosu a Benagilu.',
+        'Jeskyně přístupné lodí a klidné tyrkysové zátoky v okolí Lagosu a Benagilu.',
     },
     "Val d'Orcia Hill Towns": {
-      name: "Kopcova mestecka Val d'Orcia",
+      name: "Kopcová městečka Val d'Orcia",
       description:
-        'Zvlnena trasa Toskanskem propojujici fotogenicka stredoveka mestecka a vinarske silnice.',
+        'Zvlněná trasa Toskánskem propojující fotogenická středověká městečka a vinařské silnice.',
     },
     'Annecy Lakeside Promenade': {
-      name: 'Jezerni promenada v Annecy',
+      name: 'Jezerní promenáda v Annecy',
       description:
-        'Uvolnene alpske jezerni mesto s jednoduchymi cyklostezkami a vyhledy na horsky horizont.',
+        'Uvolněné alpské jezerní město s jednoduchými cyklostezkami a výhledy na horský horizont.',
     },
     'Ouzoud Waterfalls': {
       name: 'Vodopady Ouzoud',
       description:
-        'Jedna z nejdostupnejsich soustav vodopadu v Maroku s vyhledy na reku a lehkymi turistickymi stezkami.',
+        'Jedna z nejdostupnějších soustav vodopádů v Maroku s výhledy na řeku a lehkými turistickými stezkami.',
     },
   },
   specialists: {
     'lucia-moreno': {
-      bio: 'Lucia sestavuje rodinne pristupne aktivni itinerare po jiznim Spanelsku, kde vyvazuje kratke scenicke tury s mistni gastronomii a kulturou.',
-      languages: ['Spanelstina', 'Anglictina'],
+      bio: 'Lucia sestavuje rodinně přístupné aktivní itineráře po jižním Španělsku, kde vyvažuje krátké scénické túry s místní gastronomií a kulturou.',
+      languages: ['Španělština', 'Angličtina'],
     },
     'joao-santos': {
-      bio: 'Joao vede male skupiny po portugalskem pobrezi a horskych vesnicich se zamerenim na komunitne vlastnene ubytovani.',
-      languages: ['Portugalstina', 'Anglictina', 'Spanelstina'],
+      bio: 'Joao vede malé skupiny po portugalském pobřeží a horských vesnicích se zaměřením na komunitně vlastněné ubytování.',
+      languages: ['Portugalština', 'Angličtina', 'Španělština'],
     },
     'giulia-conti': {
-      bio: 'Giulia se soustredi na trasy v Dolomitech a severni Italii pro turisty, kteri chteji dobre zorganizovanou logistiku a stezky stredni az vyssi obtiznosti.',
-      languages: ['Italstina', 'Anglictina'],
+      bio: 'Giulia se soustředí na trasy v Dolomitech a severní Itálii pro turisty, kteří chtějí dobře zorganizovanou logistiku a stezky střední až vyšší obtížnosti.',
+      languages: ['Italština', 'Angličtina'],
     },
   },
   trips: {
     'andalusia-family-adventure-week': {
-      title: 'Rodinny dobrodruzny tyden v Andalusii',
+      title: 'Rodinný dobrodružný týden v Andalusii',
       description:
-        'Vyvazena trasa s kratkymi turami, bilymi vesnicemi a oddechovym casem na plazi navrzena pro rodiny a prvni navstevu Spanelska.',
+        'Vyvážená trasa s krátkými túrami, bílými vesnicemi a oddechovým časem na pláži navržená pro rodiny a první návštěvu Španělska.',
     },
     'atlantic-villages-and-cliffs-circuit': {
-      title: 'Okruh atlantickych vesnic a utesu',
+      title: 'Okruh atlantických vesnic a útesů',
       description:
-        'Pobrezni okruh Portugalskem s turami po promenadach, rybarskymi vesnicemi a komunitnimi zazitky v malych skupinach.',
+        'Pobřežní okruh Portugalskem s túrami po promenádách, rybářskými vesnicemi a komunitními zážitky v malých skupinách.',
     },
     'dolomites-basecamp-trek': {
-      title: 'Trekova zakladna v Dolomitech',
+      title: 'Treková základna v Dolomitech',
       description:
-        'Vysoce scenicky alpsky tyden s obedy na horskych chatach, hrebenovymi vyhlidkami a postupnou aklimatizaci.',
+        'Vysoce scénický alpský týden s obědy na horských chatách, hřebenovými vyhlídkami a postupnou aklimatizací.',
     },
   },
   combinations: {
     'iberian-atlantic-loop': {
-      name: 'Ibersky atlanticky okruh',
+      name: 'Iberský atlantický okruh',
       description:
-        'Vyvazena trasa kombinujici gastronomicka mesta, surferske pobrezi a stredne lehke tury napric Iberskym poloostrovem.',
+        'Vyvážená trasa kombinující gastronomická města, surferské pobřeží a středně lehké túry napříč Iberským poloostrovem.',
       routeDescription:
-        'Zacnete v Portu, pokracujte na jih pres Lisabon a Algarve, prejedte do Andalusie a zakoncete cestu v Madridu nebo Barcelone.',
+        'Začněte v Portu, pokračujte na jih přes Lisabon a Algarve, přejeďte do Andalusie a zakončete cestu v Madridu nebo Barceloně.',
     },
     'mediterranean-to-alps-arc': {
-      name: 'Oblouk od Stredomori k Alpam',
+      name: 'Oblouk od Středomoří k Alpám',
       description:
-        'Presunte se z tepleho stredomorskeho pobrezi do vysokohorskeho terenu pro kontrastni evropsky itinerar.',
+        'Přesuňte se z teplého středomořského pobřeží do vysokohorského terénu pro kontrastní evropský itinerář.',
       routeDescription:
-        'Zacnete na spanelskem pobrezi, pokracujte pres jih Francie a zakoncete cestu horskymi treky na severu Italie.',
+        'Začněte na španělském pobřeží, pokračujte přes jih Francie a zakončete cestu horskými treky na severu Itálie.',
     },
   },
 };
