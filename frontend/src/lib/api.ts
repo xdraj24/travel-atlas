@@ -24,6 +24,7 @@ export interface CountrySummary {
   slug: string;
   isoCode?: string;
   isState?: boolean;
+  enabled?: boolean;
   description?: string | null;
   hikingLevel?: number;
   beachLevel?: number;
@@ -319,6 +320,7 @@ function parseCountrySummary(value: unknown): CountrySummary | null {
     slug,
     isoCode: toStringValue(entity.isoCode),
     isState: toBooleanValue(entity.isState),
+    enabled: toBooleanValue(entity.enabled),
     description: toStringValue(entity.description) ?? null,
     hikingLevel: toNumberValue(entity.hikingLevel),
     beachLevel: toNumberValue(entity.beachLevel),
@@ -674,10 +676,18 @@ async function strapiFetch<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${getBaseUrl()}${endpoint}`, {
+  const requestOptions: RequestInit & { next?: { revalidate: number } } = {
     headers,
-    next: { revalidate: options.revalidate ?? 120 },
-  });
+  };
+
+  // Default to uncached requests so content changes in Strapi are reflected immediately.
+  if (typeof options.revalidate === "number") {
+    requestOptions.next = { revalidate: options.revalidate };
+  } else {
+    requestOptions.cache = "no-store";
+  }
+
+  const response = await fetch(`${getBaseUrl()}${endpoint}`, requestOptions);
 
   if (!response.ok) {
     throw new Error(`Strapi request failed: ${response.status} ${endpoint}`);
