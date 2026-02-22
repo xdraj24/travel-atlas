@@ -6,7 +6,7 @@ interface SectionCardProps {
 export function SectionCard({ children, className }: SectionCardProps) {
   return (
     <section
-      className={`rounded-xl border border-stone-200/70 bg-white/75 p-6 shadow-sm backdrop-blur-sm ${className ?? ""}`}
+      className={`rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_14px_35px_rgba(0,0,0,0.22)] backdrop-blur-[20px] ${className ?? ""}`}
     >
       {children}
     </section>

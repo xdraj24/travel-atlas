@@ -16,7 +16,7 @@ export default async function CombinationPage({ params }: CombinationPageProps) 
   if (!combination) notFound();
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+    <main className="min-h-screen bg-[var(--bg-base)] px-4 pb-6 pt-20 md:px-8 md:pb-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <section className="rounded-2xl border border-stone-200 bg-white/85 p-6 shadow-sm">
           <p className="inline-flex rounded-full border border-[#bba98a] bg-[#f4ede1] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#6f5d43]">

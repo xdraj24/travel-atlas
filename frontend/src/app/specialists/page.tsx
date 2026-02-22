@@ -24,11 +24,13 @@ export default async function SpecialistsPage({
   const specialists = await fetchSpecialists({ type: tab });
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+    <main className="min-h-screen bg-[var(--bg-base)] px-4 pb-6 pt-20 text-[var(--text-primary)] md:px-8 md:pb-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="space-y-2">
-          <h1 className="text-3xl font-bold text-stone-900">Travel Specialists</h1>
-          <p className="text-sm text-stone-700">
+          <h1 className="text-3xl font-semibold tracking-tighter text-[#F0F2F0]">
+            Travel Specialists
+          </h1>
+          <p className="text-sm text-[#B3BDB7]">
             Connect with local advisors and community trip leaders.
           </p>
         </header>
@@ -38,8 +40,8 @@ export default async function SpecialistsPage({
             href="/specialists?tab=local_advisor"
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               tab === "local_advisor"
-                ? "bg-[#6f5d43] text-white"
-                : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                ? "bg-[var(--brand-primary)] text-white"
+                : "border border-white/12 bg-white/5 text-[#C2CBC6] hover:bg-white/10"
             }`}
           >
             Local Advisors
@@ -48,8 +50,8 @@ export default async function SpecialistsPage({
             href="/specialists?tab=community_leader"
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               tab === "community_leader"
-                ? "bg-[#6f5d43] text-white"
-                : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                ? "bg-[var(--brand-primary)] text-white"
+                : "border border-white/12 bg-white/5 text-[#C2CBC6] hover:bg-white/10"
             }`}
           >
             Community Trip Leaders
@@ -63,7 +65,7 @@ export default async function SpecialistsPage({
             ))}
           </section>
         ) : (
-          <section className="rounded-xl border border-stone-200 bg-white/80 p-6 text-sm text-stone-700">
+          <section className="rounded-xl border border-white/12 bg-white/5 p-6 text-sm text-[#B3BDB7] backdrop-blur-[20px]">
             No specialists found for this tab.
           </section>
         )}

@@ -1,36 +1,30 @@
 @import "tailwindcss";
 
 @theme {
-  --color-earth-green: #1e4d3a;
-  --color-earth-hover: #2a634d;
+  --color-earth-green: #4e8c5d;
+  --color-earth-hover: #3f7650;
 
   --color-status-safe: #22c55e;
   --color-status-warning: #eab308;
   --color-status-alert: #ef4444;
 
+  --color-bg-base: #121614;
   --color-bg-surface: #1a1e1c;
   --color-text-primary: #f0f2f0;
   --color-text-secondary: #aeb9b1;
   --color-brand-primary: #4e8c5d;
-  --color-brand-highlight: #d2b07a;
+  --color-brand-highlight: #d99e6b;
 
   --animate-staggered-fade: fade-in 0.5s ease-out forwards;
 }
 
 :root {
-  --background: #f6f4ef;
-  --foreground: #1f2937;
-  --card: #ffffffcc;
-  --earth-700: #6f5d43;
-  --earth-500: #8f7b57;
-  --earth-300: #bba98a;
-  --earth-100: #e7decf;
-  --atlas-bg: #121614;
-  --atlas-ocean: #1f2624;
-  --atlas-glass: #1a1e1c;
-  --atlas-text: #f0f2f0;
-  --atlas-accent: #4e8c5d;
-  --atlas-active: #5da9e9;
+  --bg-base: #121614;
+  --bg-surface: #1a1e1c;
+  --brand-primary: #4e8c5d;
+  --brand-highlight: #d99e6b;
+  --text-primary: #f0f2f0;
+  --text-secondary: #aeb9b1;
 }
 
 @keyframes fade-in {
@@ -75,8 +69,8 @@
 }
 
 .glass-panel {
-  border: 1px solid rgb(255 255 255 / 0.12);
-  background: rgb(26 30 28 / 0.86);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
   box-shadow: 0 28px 60px rgb(0 0 0 / 0.45);
   backdrop-filter: blur(20px);
 }
@@ -123,13 +117,23 @@ body {
 }
 
 body {
-  color: var(--foreground);
+  color: var(--text-primary);
   background:
-    radial-gradient(circle at 0% 0%, #f9f5eb 0%, #f6f4ef 45%),
-    radial-gradient(circle at 100% 100%, #ebe3d3 0%, #f6f4ef 50%);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+    radial-gradient(circle at 12% 10%, rgb(78 140 93 / 0.08), transparent 34%),
+    radial-gradient(circle at 86% 88%, rgb(217 158 107 / 0.08), transparent 36%),
+    var(--bg-base);
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.03em;
 }
 
 * {

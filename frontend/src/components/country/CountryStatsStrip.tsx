@@ -29,10 +29,10 @@ export function CountryStatsStrip({ country }: CountryStatsStripProps) {
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-xl border border-stone-200 bg-white/80 p-4 shadow-sm"
+          className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_14px_35px_rgba(0,0,0,0.2)] backdrop-blur-[20px]"
         >
-          <p className="text-xs uppercase tracking-wide text-stone-500">{item.label}</p>
-          <p className="mt-2 text-lg font-semibold text-stone-900">{item.value}</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-[#9EA8A2]">{item.label}</p>
+          <p className="mt-2 text-lg font-semibold tracking-tighter text-[#F0F2F0]">{item.value}</p>
         </div>
       ))}
     </section>
