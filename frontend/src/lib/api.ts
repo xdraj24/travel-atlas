@@ -192,12 +192,46 @@ function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
+let hasLoggedUrlMismatch = false;
+
 function getBaseUrl(): string {
-  const value = process.env.NEXT_PUBLIC_STRAPI_URL ?? process.env.STRAPI_URL;
+  const isServer = typeof window === "undefined";
+  const serverUrlRaw = process.env.STRAPI_URL;
+  const publicUrlRaw = process.env.NEXT_PUBLIC_STRAPI_URL;
+
+  const serverUrl =
+    typeof serverUrlRaw === "string" && serverUrlRaw.trim().length > 0
+      ? normalizeUrl(serverUrlRaw)
+      : undefined;
+  const publicUrl =
+    typeof publicUrlRaw === "string" && publicUrlRaw.trim().length > 0
+      ? normalizeUrl(publicUrlRaw)
+      : undefined;
+
+  const value = isServer
+    ? (serverUrl ?? publicUrl)
+    : (publicUrl ?? serverUrl);
+
   if (!value) {
-    throw new Error("Missing NEXT_PUBLIC_STRAPI_URL");
+    throw new Error(
+      "Missing Strapi base URL: set STRAPI_URL (server) and/or NEXT_PUBLIC_STRAPI_URL (client).",
+    );
   }
-  return normalizeUrl(value);
+
+  if (
+    isServer &&
+    serverUrl &&
+    publicUrl &&
+    serverUrl !== publicUrl &&
+    !hasLoggedUrlMismatch
+  ) {
+    hasLoggedUrlMismatch = true;
+    console.warn(
+      `[api] STRAPI_URL (${serverUrl}) differs from NEXT_PUBLIC_STRAPI_URL (${publicUrl}). Using STRAPI_URL for server requests.`,
+    );
+  }
+
+  return value;
 }
 
 function getToken(): string | undefined {
