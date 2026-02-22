@@ -1,6 +1,7 @@
 "use client";
 
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { DataDrivenPropertyValueSpecification } from "mapbox-gl";
 import MapboxLanguage from "@mapbox/mapbox-gl-language";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -465,10 +466,14 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
       for (const layer of localizedStyle.layers) {
         const layout = layer.layout as Record<string, unknown> | undefined;
         const textField = layout?.["text-field"];
-        if (typeof textField === "undefined" || !map.getLayer(layer.id)) {
+        if (typeof textField === "undefined" || textField === null || !map.getLayer(layer.id)) {
           continue;
         }
-        map.setLayoutProperty(layer.id, "text-field", textField);
+        map.setLayoutProperty(
+          layer.id,
+          "text-field",
+          textField as DataDrivenPropertyValueSpecification<string>,
+        );
       }
     } catch (error) {
       console.error("Unable to update map label language", error);
