@@ -15,7 +15,7 @@ export function TopNavbar() {
           href="/"
           className="text-sm font-semibold tracking-tighter text-[#F0F2F0] transition hover:text-white md:text-base"
         >
-          Curated Adventure Atlas
+          Atlas
         </Link>
 
         <nav className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-[#AEB9B1] md:gap-6 md:text-xs">
