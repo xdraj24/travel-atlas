@@ -20,16 +20,27 @@ module.exports = {
    * run jobs, or perform some special logic.
    */
   async bootstrap({ strapi }) {
-    try {
-      await runI18nSetup(strapi);
-    } catch (error) {
-      strapi.log.error('[i18n] Failed during i18n bootstrap setup', error);
+    const runBootstrapI18nSetup = process.env.RUN_BOOTSTRAP_I18N_SETUP === 'true';
+    const runBootstrapContentSeed = process.env.RUN_BOOTSTRAP_CONTENT_SEED === 'true';
+
+    if (runBootstrapI18nSetup) {
+      try {
+        await runI18nSetup(strapi);
+      } catch (error) {
+        strapi.log.error('[i18n] Failed during i18n bootstrap setup', error);
+      }
+    } else {
+      strapi.log.info('[i18n] Skipping bootstrap i18n setup (RUN_BOOTSTRAP_I18N_SETUP!=true)');
     }
 
-    try {
-      await runInitialContentSeed(strapi);
-    } catch (error) {
-      strapi.log.error('[seed] Failed to bootstrap initial content', error);
+    if (runBootstrapContentSeed) {
+      try {
+        await runInitialContentSeed(strapi);
+      } catch (error) {
+        strapi.log.error('[seed] Failed to bootstrap initial content', error);
+      }
+    } else {
+      strapi.log.info('[seed] Skipping bootstrap content seed (RUN_BOOTSTRAP_CONTENT_SEED!=true)');
     }
   },
 };

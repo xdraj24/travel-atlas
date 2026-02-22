@@ -23,7 +23,12 @@
     "slug": {
       "type": "uid",
       "targetField": "name",
-      "required": true
+      "required": true,
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      }
     },
     "isoCode": {
       "type": "string",
@@ -85,6 +90,10 @@
       "default": true
     },
     "isState": {
+      "type": "boolean",
+      "default": false
+    },
+    "enabled": {
       "type": "boolean",
       "default": false
     },
