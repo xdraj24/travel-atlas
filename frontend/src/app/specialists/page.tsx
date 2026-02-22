@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SpecialistCard } from "@/components/specialist/SpecialistCard";
 import { fetchSpecialists } from "@/lib/api";
 import { type SearchParams } from "@/lib/filters";
+import { getRequestLocale } from "@/lib/locale.server";
 
 interface SpecialistsPageProps {
   searchParams: Promise<SearchParams>;
@@ -20,8 +21,9 @@ export default async function SpecialistsPage({
 }: SpecialistsPageProps) {
   const params = await searchParams;
   const tab = resolveTab(typeof params.tab === "string" ? params.tab : undefined);
+  const locale = await getRequestLocale();
 
-  const specialists = await fetchSpecialists({ type: tab });
+  const specialists = await fetchSpecialists({ type: tab, locale });
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] px-4 pb-6 pt-20 text-[var(--text-primary)] md:px-8 md:pb-8">

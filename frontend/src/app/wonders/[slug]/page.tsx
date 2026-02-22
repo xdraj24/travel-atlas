@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { WonderMarkerMap } from "@/components/wonder/WonderMarkerMap";
 import { fetchWonderBySlug, stripRichText } from "@/lib/api";
+import { getRequestLocale } from "@/lib/locale.server";
 import { computeSafetyWithAltitudeFallback } from "@/lib/safety";
 
 interface WonderPageProps {
@@ -26,7 +27,8 @@ function SafetyPill({ label, safe }: { label: string; safe: boolean }) {
 
 export default async function WonderPage({ params }: WonderPageProps) {
   const { slug } = await params;
-  const wonder = await fetchWonderBySlug(slug);
+  const locale = await getRequestLocale();
+  const wonder = await fetchWonderBySlug(slug, locale);
   if (!wonder) notFound();
 
   const computedSafety = computeSafetyWithAltitudeFallback({

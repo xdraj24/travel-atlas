@@ -1,5 +1,6 @@
 import { WorldMap } from "@/components/map/WorldMap";
 import { fetchCountries } from "@/lib/api";
+import { getRequestLocale } from "@/lib/locale.server";
 
 interface HomePageProps {
   searchParams: Promise<{
@@ -10,7 +11,8 @@ interface HomePageProps {
 export default async function Home({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const initialView = params.view === "list" ? "list" : "map";
-  const countries = await fetchCountries();
+  const locale = await getRequestLocale();
+  const countries = await fetchCountries(undefined, locale);
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] pt-20 text-[var(--text-primary)]">

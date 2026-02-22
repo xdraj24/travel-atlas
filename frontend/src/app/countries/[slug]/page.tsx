@@ -7,6 +7,7 @@ import { SpecialistCard } from "@/components/specialist/SpecialistCard";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { WonderCard } from "@/components/wonder/WonderCard";
 import { fetchCountryBySlug, stripRichText } from "@/lib/api";
+import { getRequestLocale } from "@/lib/locale.server";
 
 interface CountryPageProps {
   params: Promise<{
@@ -31,7 +32,8 @@ function SafetyBadge({ label, safe }: { label: string; safe?: boolean }) {
 
 export default async function CountryPage({ params }: CountryPageProps) {
   const { slug } = await params;
-  const country = await fetchCountryBySlug(slug);
+  const locale = await getRequestLocale();
+  const country = await fetchCountryBySlug(slug, locale);
   if (!country) notFound();
 
   return (
