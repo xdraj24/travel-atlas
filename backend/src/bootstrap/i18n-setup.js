@@ -5,6 +5,7 @@ const SUPPORTED_LOCALES = [
   { code: 'en', name: 'English (en)', isDefault: true },
   { code: 'cs', name: 'Czech (cs)', isDefault: false },
 ];
+const SUPPORTED_LOCALE_CODES = new Set(SUPPORTED_LOCALES.map((locale) => locale.code));
 const MIGRATION_BATCH_SIZE = 100;
 
 function asArray(value) {
@@ -156,12 +157,21 @@ async function updateEntry(strapi, uid, id, data) {
 async function migrateEntryLocale(strapi, uid, entry) {
   if (!entry || !entry.id) return false;
 
+  const localeCode = typeof entry.locale === 'string' ? entry.locale.trim() : '';
+  const hasDefaultLocalization = asArray(entry.localizations).some(
+    (localization) => localization?.locale === DEFAULT_LOCALE,
+  );
   const rawLocalizationIds = getLocalizationIds(entry);
   const localizationIds = rawLocalizationIds.filter((localizationId) => localizationId !== entry.id);
   const localizationsChanged = rawLocalizationIds.length !== localizationIds.length;
 
   const data = {};
-  if (entry.locale !== DEFAULT_LOCALE) {
+  const shouldSetDefaultLocale =
+    localeCode.length === 0 ||
+    !SUPPORTED_LOCALE_CODES.has(localeCode) ||
+    (localeCode !== DEFAULT_LOCALE && !hasDefaultLocalization);
+
+  if (shouldSetDefaultLocale) {
     data.locale = DEFAULT_LOCALE;
   }
 
@@ -185,7 +195,7 @@ async function migrateCollectionType(strapi, contentType) {
     const entries = asArray(
       await query.findMany({
         select: ['id', 'locale'],
-        populate: { localizations: { select: ['id'] } },
+        populate: { localizations: { select: ['id', 'locale'] } },
         limit: MIGRATION_BATCH_SIZE,
         offset,
       }),
@@ -195,10 +205,16 @@ async function migrateCollectionType(strapi, contentType) {
 
     for (const entry of entries) {
       scanned += 1;
-      // eslint-disable-next-line no-await-in-loop
-      const changed = await migrateEntryLocale(strapi, contentType.uid, entry);
-      if (changed) {
-        migrated += 1;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const changed = await migrateEntryLocale(strapi, contentType.uid, entry);
+        if (changed) {
+          migrated += 1;
+        }
+      } catch (error) {
+        strapi.log.warn(
+          `[i18n] Failed migrating ${contentType.uid}#${entry.id}: ${error.message}`,
+        );
       }
     }
 
@@ -212,15 +228,20 @@ async function migrateSingleType(strapi, contentType) {
   const query = strapi.db.query(contentType.uid);
   const entry = await query.findOne({
     select: ['id', 'locale'],
-    populate: { localizations: { select: ['id'] } },
+    populate: { localizations: { select: ['id', 'locale'] } },
   });
 
   if (!entry) {
     return { scanned: 0, migrated: 0 };
   }
 
-  const changed = await migrateEntryLocale(strapi, contentType.uid, entry);
-  return { scanned: 1, migrated: changed ? 1 : 0 };
+  try {
+    const changed = await migrateEntryLocale(strapi, contentType.uid, entry);
+    return { scanned: 1, migrated: changed ? 1 : 0 };
+  } catch (error) {
+    strapi.log.warn(`[i18n] Failed migrating ${contentType.uid}#${entry.id}: ${error.message}`);
+    return { scanned: 1, migrated: 0 };
+  }
 }
 
 async function migrateExistingContentToDefaultLocale(strapi) {
