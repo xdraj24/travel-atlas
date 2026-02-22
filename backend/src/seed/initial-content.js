@@ -76,6 +76,7 @@ const IMAGE_SOURCES = {
 const BASE_LOCALE = 'en';
 const FALLBACK_LOCALE = 'cs';
 const LOCALES = [BASE_LOCALE, FALLBACK_LOCALE];
+const DEFAULT_LOCALE = 'cs';
 const LOCALE_LABELS = {
   en: 'English (en)',
   cs: 'Čeština (cs)',
@@ -853,7 +854,7 @@ async function ensureLocales(strapi) {
     const data = {
       code,
       name: LOCALE_LABELS[code] || code,
-      isDefault: code === BASE_LOCALE,
+      isDefault: code === DEFAULT_LOCALE,
     };
 
     if (!existing) {
@@ -880,7 +881,7 @@ async function ensureLocales(strapi) {
 
   const updatedLocales = asArray(await localeQuery.findMany());
   for (const locale of updatedLocales) {
-    const shouldBeDefault = locale.code === BASE_LOCALE;
+    const shouldBeDefault = locale.code === DEFAULT_LOCALE;
     if (Boolean(locale.isDefault) === shouldBeDefault) continue;
 
     await localeQuery.update({
@@ -1407,7 +1408,7 @@ async function runInitialContentSeed(strapi) {
 
   strapi.log.info('[seed] Bootstrapping initial countries, trips, and images');
   strapi.log.info('[seed] Using royalty-free images licensed via Pexels');
-  strapi.log.info(`[seed] Ensuring locales: ${LOCALES.join(', ')} (default: ${BASE_LOCALE})`);
+  strapi.log.info(`[seed] Ensuring locales: ${LOCALES.join(', ')} (default: ${DEFAULT_LOCALE})`);
 
   await ensureLocales(strapi);
 

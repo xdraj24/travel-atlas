@@ -2,8 +2,8 @@ module.exports = () => ({
   i18n: {
     enabled: true,
     config: {
-      defaultLocale: 'en',
-      locales: ['en', 'cs'],
+      defaultLocale: 'cs',
+      locales: ['cs', 'en'],
     },
   },
 });

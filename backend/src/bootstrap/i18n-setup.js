@@ -1,9 +1,10 @@
 'use strict';
 
-const DEFAULT_LOCALE = 'en';
+const DEFAULT_LOCALE = 'cs';
+const CONTENT_MIGRATION_LOCALE = 'en';
 const SUPPORTED_LOCALES = [
-  { code: 'en', name: 'English (en)', isDefault: true },
-  { code: 'cs', name: 'Czech (cs)', isDefault: false },
+  { code: 'cs', name: 'Czech (cs)', isDefault: true },
+  { code: 'en', name: 'English (en)', isDefault: false },
 ];
 const SUPPORTED_LOCALE_CODES = new Set(SUPPORTED_LOCALES.map((locale) => locale.code));
 const MIGRATION_BATCH_SIZE = 100;
@@ -159,7 +160,7 @@ async function migrateEntryLocale(strapi, uid, entry) {
 
   const localeCode = typeof entry.locale === 'string' ? entry.locale.trim() : '';
   const hasDefaultLocalization = asArray(entry.localizations).some(
-    (localization) => localization?.locale === DEFAULT_LOCALE,
+    (localization) => localization?.locale === CONTENT_MIGRATION_LOCALE,
   );
   const rawLocalizationIds = getLocalizationIds(entry);
   const localizationIds = rawLocalizationIds.filter((localizationId) => localizationId !== entry.id);
@@ -169,10 +170,10 @@ async function migrateEntryLocale(strapi, uid, entry) {
   const shouldSetDefaultLocale =
     localeCode.length === 0 ||
     !SUPPORTED_LOCALE_CODES.has(localeCode) ||
-    (localeCode !== DEFAULT_LOCALE && !hasDefaultLocalization);
+    (localeCode !== CONTENT_MIGRATION_LOCALE && !hasDefaultLocalization);
 
   if (shouldSetDefaultLocale) {
-    data.locale = DEFAULT_LOCALE;
+    data.locale = CONTENT_MIGRATION_LOCALE;
   }
 
   if (!Array.isArray(entry.localizations) || localizationsChanged) {
