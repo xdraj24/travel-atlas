@@ -238,6 +238,10 @@ function resolveCountryFromProperties(
 
 export function WorldMap({ countries, initialView = "map", locale }: WorldMapProps) {
   const dictionary = getDictionary(locale);
+  const enabledCountries = useMemo(
+    () => countries.filter((country) => country.enabled === true),
+    [countries],
+  );
   const [selectedCountry, setSelectedCountry] = useState<CountrySummary | null>(null);
   const [tooltip, setTooltip] = useState<HoverTooltipState | null>(null);
   const [rawWorldGeoJson, setRawWorldGeoJson] = useState<WorldGeoJson | null>(null);
@@ -251,34 +255,36 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
 
   const countriesByName = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    countries.forEach((country) => {
+    enabledCountries.forEach((country) => {
       map.set(normalizeCountryKey(country.name), country);
     });
     return map;
-  }, [countries]);
+  }, [enabledCountries]);
 
   const countriesByIso = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    countries.forEach((country) => {
+    enabledCountries.forEach((country) => {
       if (country.isoCode) {
         map.set(country.isoCode.toLowerCase(), country);
       }
     });
     return map;
-  }, [countries]);
+  }, [enabledCountries]);
 
   const countriesBySlug = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    countries.forEach((country) => {
+    enabledCountries.forEach((country) => {
       map.set(country.slug, country);
     });
     return map;
-  }, [countries]);
+  }, [enabledCountries]);
 
   const listCountries = useMemo(() => {
-    const available = countries.filter((country) => hasCountryContent(country));
-    return (available.length > 0 ? available : countries).sort((a, b) => a.name.localeCompare(b.name));
-  }, [countries]);
+    const available = enabledCountries.filter((country) => hasCountryContent(country));
+    return (available.length > 0 ? available : enabledCountries).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }, [enabledCountries]);
 
   useEffect(() => {
     setViewMode(initialView);
@@ -507,8 +513,9 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
   ) => {
     const selection = resolveSelectionFromMapInteraction(event);
     if (!selection) {
-      if (options?.allowRandomFallback && countries.length > 0) {
-        const randomCountry = countries[Math.floor(Math.random() * countries.length)];
+      if (options?.allowRandomFallback && enabledCountries.length > 0) {
+        const randomCountry =
+          enabledCountries[Math.floor(Math.random() * enabledCountries.length)];
         setSelectedCountry(randomCountry);
         setSelectedFeatureId(null);
         setTooltip(null);

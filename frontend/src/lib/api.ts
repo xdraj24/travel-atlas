@@ -734,7 +734,9 @@ export async function fetchCountries(
 
   return extractArrayData(payload)
     .map((entry) => parseCountrySummary(entry))
-    .filter((entry): entry is CountrySummary => entry !== null);
+    .filter(
+      (entry): entry is CountrySummary => entry !== null && entry.enabled === true,
+    );
 }
 
 export async function fetchCountryBySlug(
@@ -742,7 +744,10 @@ export async function fetchCountryBySlug(
   locale?: AppLocale,
 ): Promise<Country | null> {
   const query: Record<string, unknown> = {
-    filters: { slug: { $eq: slug } },
+    filters: {
+      slug: { $eq: slug },
+      enabled: { $eq: true },
+    },
     locale,
     populate: {
       heroImage: true,
