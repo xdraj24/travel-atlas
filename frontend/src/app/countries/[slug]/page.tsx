@@ -18,10 +18,10 @@ function SafetyBadge({ label, safe }: { label: string; safe?: boolean }) {
   const isSafe = safe ?? false;
   return (
     <div
-      className={`rounded-lg px-4 py-3 text-sm font-semibold ${
+      className={`rounded-xl border px-4 py-3 text-sm font-medium ${
         isSafe
-          ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border border-rose-200 bg-rose-50 text-rose-700"
+          ? "border-emerald-300/30 bg-emerald-500/10 text-emerald-200"
+          : "border-rose-300/30 bg-rose-500/10 text-rose-200"
       }`}
     >
       {label}: {isSafe ? "Safe" : "Caution"}
@@ -35,12 +35,12 @@ export default async function CountryPage({ params }: CountryPageProps) {
   if (!country) notFound();
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+    <main className="min-h-screen bg-[var(--bg-base)] px-4 pb-6 pt-20 text-[var(--text-primary)] md:px-8 md:pb-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         {country.isState && country.parentCountry ? (
           <Link
             href={`/countries/${country.parentCountry.slug}`}
-            className="inline-flex w-fit items-center gap-2 rounded-full border border-stone-300 bg-white/75 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-stone-700"
+            className="inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#C4CDC8]"
           >
             ← Back to {country.parentCountry.name}
           </Link>
@@ -50,7 +50,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
         <CountryStatsStrip country={country} />
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Wonders</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Wonders</h2>
           {country.wonders && country.wonders.length > 0 ? (
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {country.wonders.map((wonder) => (
@@ -58,26 +58,26 @@ export default async function CountryPage({ params }: CountryPageProps) {
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-stone-600">No wonders published yet.</p>
+            <p className="mt-3 text-sm text-[#AEB9B1]">No wonders published yet.</p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Hikes</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Hikes</h2>
           {country.hikes && country.hikes.length > 0 ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {country.hikes.map((hike) => (
                 <article
                   key={hike.id}
-                  className="rounded-xl border border-stone-200 bg-white p-4"
+                  className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-[20px]"
                 >
-                  <h3 className="text-lg font-semibold text-stone-900">{hike.name}</h3>
-                  <p className="mt-1 text-sm text-stone-600">
+                  <h3 className="text-lg font-semibold tracking-tighter text-[#F0F2F0]">{hike.name}</h3>
+                  <p className="mt-1 text-sm text-[#AEB9B1]">
                     Difficulty {hike.difficulty ?? "N/A"} / 5 · {hike.distanceKm ?? "?"} km ·{" "}
                     {hike.durationHours ?? "?"} hrs
                   </p>
                   {hike.description ? (
-                    <p className="mt-2 text-sm text-stone-700">
+                    <p className="mt-2 text-sm text-[#C3CCC6]">
                       {stripRichText(hike.description)}
                     </p>
                   ) : null}
@@ -85,12 +85,14 @@ export default async function CountryPage({ params }: CountryPageProps) {
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-stone-600">No hikes published yet.</p>
+            <p className="mt-3 text-sm text-[#AEB9B1]">No hikes published yet.</p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Travel Specialists</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+            Travel Specialists
+          </h2>
           {country.specialists && country.specialists.length > 0 ? (
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {country.specialists.map((specialist) => (
@@ -98,35 +100,39 @@ export default async function CountryPage({ params }: CountryPageProps) {
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-stone-600">
+            <p className="mt-3 text-sm text-[#AEB9B1]">
               No specialists linked for this destination.
             </p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Best Combined With</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+            Best Combined With
+          </h2>
           {country.bestCombinedWith && country.bestCombinedWith.length > 0 ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
               {country.bestCombinedWith.map((combination) => (
                 <Link
                   key={combination.id}
                   href={`/countries/${combination.slug}`}
-                  className="rounded-xl border border-stone-200 bg-white p-4 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
+                  className="rounded-xl border border-white/12 bg-white/5 p-4 text-sm font-semibold text-[#D8E1DB] transition hover:bg-white/10"
                 >
                   {combination.name}
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-stone-600">
+            <p className="mt-3 text-sm text-[#AEB9B1]">
               Combination links will appear when curated.
             </p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Safety Indicators</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+            Safety Indicators
+          </h2>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <SafetyBadge label="Pregnancy" safe={country.pregnancySafe} />
             <SafetyBadge label="Infant" safe={country.infantSafe} />
@@ -135,16 +141,16 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
         {!country.isState && country.regions && country.regions.length > 0 ? (
           <SectionCard>
-            <h2 className="text-2xl font-semibold text-stone-900">Regions</h2>
+            <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Regions</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {country.regions.map((region) => (
                 <Link
                   key={region.id}
                   href={`/countries/${region.slug}`}
-                  className="rounded-xl border border-stone-200 bg-white p-4 transition hover:bg-stone-50"
+                  className="rounded-xl border border-white/12 bg-white/5 p-4 transition hover:bg-white/10"
                 >
-                  <h3 className="font-semibold text-stone-900">{region.name}</h3>
-                  <p className="mt-1 text-sm text-stone-600">
+                  <h3 className="font-semibold tracking-tighter text-[#F0F2F0]">{region.name}</h3>
+                  <p className="mt-1 text-sm text-[#AEB9B1]">
                     Explore regional itinerary details.
                   </p>
                 </Link>

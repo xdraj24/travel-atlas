@@ -36,7 +36,7 @@ export default async function WonderPage({ params }: WonderPageProps) {
   });
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+    <main className="min-h-screen bg-[var(--bg-base)] px-4 pb-6 pt-20 md:px-8 md:pb-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white/80 shadow-sm">
           {wonder.heroImage?.url ? (

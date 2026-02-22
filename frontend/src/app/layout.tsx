@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import "./globals.css";
+import { TopNavbar } from "@/components/navigation/TopNavbar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Adventure Atlas",
+  title: "Curated Adventure Atlas",
   description: "Curated adventure travel atlas with interactive world map discovery.",
 };
 
@@ -26,7 +23,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${inter.variable} antialiased`}>
+        <TopNavbar />
         {children}
       </body>
     </html>

@@ -17,6 +17,7 @@ import { CountryPreviewPanel } from "@/components/map/CountryPreviewPanel";
 
 interface WorldMapProps {
   countries: CountrySummary[];
+  initialView?: "map" | "list";
 }
 
 type FeatureId = string | number;
@@ -33,6 +34,7 @@ interface MapFeatureProperties extends Record<string, unknown> {
   id?: string | number;
   __countrySlug?: string;
   __fillColor?: string;
+  __isAvailable?: boolean;
 }
 
 type WorldFeature = Feature<Geometry, MapFeatureProperties>;
@@ -60,17 +62,15 @@ const geographyUrl =
 
 const WORLD_SOURCE_ID = "world-countries";
 const WORLD_FILL_LAYER_ID = "world-countries-fill";
-const WORLD_GLOW_LAYER_ID = "world-countries-glow";
+const WORLD_AVAILABLE_GLOW_LAYER_ID = "world-countries-available-glow";
+const WORLD_SELECTION_GLOW_LAYER_ID = "world-countries-selection-glow";
 const WORLD_STROKE_LAYER_ID = "world-countries-stroke";
 const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/dark-v11";
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-const COUNTRY_DEFAULT_FILL = "#526044";
-const COUNTRY_PRIORITY_FILL = "#9f6a3a";
-const COUNTRY_SELECTED_FILL = "#c9a06a";
-const COUNTRY_HOVER_FILL = "#647356";
-
-const featuredCountrySlugs = new Set(["norway", "switzerland", "swiss"]);
-const featuredCountryIso = new Set(["no", "nor", "ch", "che"]);
+const COUNTRY_DEFAULT_FILL = "#354038";
+const COUNTRY_ACTIVE_FILL = "#D99E6B";
+const COUNTRY_SELECTED_FILL = "#E8BC8F";
+const COUNTRY_HOVER_FILL = "#E3B280";
 
 const worldFillLayer: LayerProps = {
   id: WORLD_FILL_LAYER_ID,
@@ -82,6 +82,8 @@ const worldFillLayer: LayerProps = {
       COUNTRY_SELECTED_FILL,
       ["boolean", ["feature-state", "isHovered"], false],
       COUNTRY_HOVER_FILL,
+      ["boolean", ["get", "__isAvailable"], false],
+      COUNTRY_ACTIVE_FILL,
       ["coalesce", ["get", "__fillColor"], COUNTRY_DEFAULT_FILL],
     ],
     "fill-opacity": [
@@ -90,29 +92,33 @@ const worldFillLayer: LayerProps = {
       0.98,
       ["boolean", ["feature-state", "isHovered"], false],
       0.95,
-      0.9,
+      ["boolean", ["get", "__isAvailable"], false],
+      0.93,
+      0.78,
     ],
   },
 };
 
-const worldGlowLayer: LayerProps = {
-  id: WORLD_GLOW_LAYER_ID,
+const worldAvailabilityGlowLayer: LayerProps = {
+  id: WORLD_AVAILABLE_GLOW_LAYER_ID,
+  type: "line",
+  filter: ["==", ["get", "__isAvailable"], true],
+  paint: {
+    "line-color": COUNTRY_ACTIVE_FILL,
+    "line-width": 1.8,
+    "line-opacity": 0.28,
+    "line-blur": 2.4,
+  },
+};
+
+const worldSelectionGlowLayer: LayerProps = {
+  id: WORLD_SELECTION_GLOW_LAYER_ID,
   type: "line",
   paint: {
     "line-color": COUNTRY_SELECTED_FILL,
-    "line-width": [
-      "case",
-      ["boolean", ["feature-state", "isSelected"], false],
-      6,
-      0,
-    ],
-    "line-opacity": [
-      "case",
-      ["boolean", ["feature-state", "isSelected"], false],
-      0.45,
-      0,
-    ],
-    "line-blur": 1.6,
+    "line-width": ["case", ["boolean", ["feature-state", "isSelected"], false], 5.5, 0],
+    "line-opacity": ["case", ["boolean", ["feature-state", "isSelected"], false], 0.42, 0],
+    "line-blur": 1.4,
   },
 };
 
@@ -161,21 +167,31 @@ function formatScore(value?: number): string {
   return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 }
 
+function hasCountryContent(country: CountrySummary | undefined): boolean {
+  if (!country) return false;
+
+  const hasDescription = typeof country.description === "string" && country.description.trim().length > 0;
+  const hasImage = Boolean(country.heroImage?.url);
+  const hasWonders = (country.wonders?.length ?? 0) > 0;
+  const hasExperienceScores =
+    typeof country.hikingLevel === "number" ||
+    typeof country.roadtripLevel === "number" ||
+    typeof country.beachLevel === "number";
+  const hasPlanningData =
+    typeof country.minDays === "number" ||
+    typeof country.optimalDays === "number" ||
+    typeof country.avgAccommodationPrice === "number";
+
+  return hasDescription || hasImage || hasWonders || hasExperienceScores || hasPlanningData;
+}
+
 function getCountryFill(country: CountrySummary | undefined): string {
   if (!country) return COUNTRY_DEFAULT_FILL;
+  return hasCountryContent(country) ? COUNTRY_ACTIVE_FILL : COUNTRY_DEFAULT_FILL;
+}
 
-  const normalizedName = country.name.trim().toLowerCase();
-  const normalizedIso = country.isoCode?.trim().toLowerCase() ?? "";
-  if (
-    featuredCountrySlugs.has(country.slug.trim().toLowerCase()) ||
-    featuredCountryIso.has(normalizedIso) ||
-    normalizedName.includes("norway") ||
-    normalizedName.includes("swiss") ||
-    normalizedName.includes("switzerland")
-  ) {
-    return COUNTRY_PRIORITY_FILL;
-  }
-  return COUNTRY_DEFAULT_FILL;
+function getCountryRegionLabel(country: CountrySummary): string {
+  return country.isState ? "Regional Escape" : "Country Escape";
 }
 
 function isFeatureId(value: unknown): value is FeatureId {
@@ -211,13 +227,14 @@ function resolveCountryFromProperties(
   return undefined;
 }
 
-export function WorldMap({ countries }: WorldMapProps) {
+export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
   const [selectedCountry, setSelectedCountry] = useState<CountrySummary | null>(null);
   const [tooltip, setTooltip] = useState<HoverTooltipState | null>(null);
   const [rawWorldGeoJson, setRawWorldGeoJson] = useState<WorldGeoJson | null>(null);
   const [hoveredFeatureId, setHoveredFeatureId] = useState<FeatureId | null>(null);
   const [selectedFeatureId, setSelectedFeatureId] = useState<FeatureId | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [viewMode, setViewMode] = useState<"map" | "list">(initialView);
   const mapRef = useRef<MapRef | null>(null);
   const highlightedFeatureIdsRef = useRef<Set<FeatureId>>(new Set());
   const lastTouchInteractionAtRef = useRef(0);
@@ -247,6 +264,24 @@ export function WorldMap({ countries }: WorldMapProps) {
     });
     return map;
   }, [countries]);
+
+  const listCountries = useMemo(() => {
+    const available = countries.filter((country) => hasCountryContent(country));
+    return (available.length > 0 ? available : countries).sort((a, b) => a.name.localeCompare(b.name));
+  }, [countries]);
+
+  useEffect(() => {
+    setViewMode(initialView);
+  }, [initialView]);
+
+  useEffect(() => {
+    if (viewMode === "list") {
+      setTooltip(null);
+      setSelectedCountry(null);
+      setHoveredFeatureId(null);
+      setSelectedFeatureId(null);
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -310,6 +345,7 @@ export function WorldMap({ countries }: WorldMapProps) {
           properties: {
             ...properties,
             __countrySlug: country?.slug,
+            __isAvailable: hasCountryContent(country),
             __fillColor: getCountryFill(country),
           },
         } as WorldFeature;
@@ -502,7 +538,10 @@ export function WorldMap({ countries }: WorldMapProps) {
   };
 
   return (
-    <section className="relative h-[100dvh] min-h-[680px] w-full overflow-hidden bg-[#1F2624]">
+    <section
+      id="map"
+      className="relative h-[calc(100dvh-5rem)] min-h-[680px] w-full overflow-hidden bg-[#1F2624]"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-0"
@@ -512,115 +551,174 @@ export function WorldMap({ countries }: WorldMapProps) {
         }}
       />
 
-      {mapboxToken ? (
-        <div className="relative z-10 h-full w-full">
-          <MapboxMap
-            ref={mapRef}
-            style={{ width: "100%", height: "100%" }}
-            mapboxAccessToken={mapboxToken}
-            mapStyle={mapboxStyle}
-            initialViewState={{ longitude: 8, latitude: 22, zoom: 1.45 }}
-            minZoom={1}
-            maxZoom={4}
-            dragRotate={false}
-            touchZoomRotate={false}
-            renderWorldCopies={false}
-            interactiveLayerIds={[WORLD_FILL_LAYER_ID]}
-            onLoad={() => setIsMapReady(true)}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={clearHoveredCountry}
-            onClick={handleMapClick}
-            onTouchEnd={handleMapTouchEnd}
-          >
-            {worldGeoJson ? (
-              <Source id={WORLD_SOURCE_ID} type="geojson" data={worldGeoJson} generateId>
-                <Layer {...worldFillLayer} />
-                <Layer {...worldGlowLayer} />
-                <Layer {...worldStrokeLayer} />
-              </Source>
-            ) : null}
-          </MapboxMap>
-        </div>
+      {viewMode === "map" ? (
+        <>
+          {mapboxToken ? (
+            <div className="relative z-10 h-full w-full">
+              <MapboxMap
+                ref={mapRef}
+                style={{ width: "100%", height: "100%" }}
+                mapboxAccessToken={mapboxToken}
+                mapStyle={mapboxStyle}
+                initialViewState={{ longitude: 8, latitude: 22, zoom: 1.45 }}
+                minZoom={1}
+                maxZoom={4}
+                dragRotate={false}
+                touchZoomRotate={false}
+                renderWorldCopies={false}
+                interactiveLayerIds={[WORLD_FILL_LAYER_ID]}
+                onLoad={() => setIsMapReady(true)}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={clearHoveredCountry}
+                onClick={handleMapClick}
+                onTouchEnd={handleMapTouchEnd}
+              >
+                {worldGeoJson ? (
+                  <Source id={WORLD_SOURCE_ID} type="geojson" data={worldGeoJson} generateId>
+                    <Layer {...worldFillLayer} />
+                    <Layer {...worldAvailabilityGlowLayer} />
+                    <Layer {...worldSelectionGlowLayer} />
+                    <Layer {...worldStrokeLayer} />
+                  </Source>
+                ) : null}
+              </MapboxMap>
+            </div>
+          ) : (
+            <div className="relative z-10 flex h-full w-full items-center justify-center px-6 text-center">
+              <div className="max-w-md rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-[#D3DCD6] backdrop-blur-[20px]">
+                Add{" "}
+                <code className="rounded bg-black/30 px-1 py-0.5">
+                  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
+                </code>{" "}
+                to enable the interactive map.
+              </div>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="relative z-10 flex h-full w-full items-center justify-center px-6 text-center">
-          <div className="max-w-md rounded-2xl border border-white/20 bg-[#1A1E1CCC] p-5 text-sm text-[#D3DCD6] backdrop-blur-[20px]">
-            Add <code className="rounded bg-black/30 px-1 py-0.5">NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN</code>{" "}
-            to enable the interactive map.
+        <div className="relative z-10 h-full overflow-y-auto px-4 pb-24 pt-8 md:px-8">
+          <div id="countries" className="mx-auto grid w-full max-w-7xl gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {listCountries.map((country) => (
+              <Link
+                key={country.id}
+                href={`/countries/${country.slug}`}
+                className="group overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-[20px] transition hover:-translate-y-1 hover:border-white/20"
+              >
+                <div className="relative h-52 overflow-hidden">
+                  {country.heroImage?.url ? (
+                    <img
+                      src={country.heroImage.url}
+                      alt={country.heroImage.alternativeText ?? country.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-[#2a332f] to-[#151917]" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#121614] via-[#121614]/55 to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h3 className="text-2xl font-semibold tracking-tighter text-[#F3F5F2]">
+                      {country.name}
+                    </h3>
+                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#C6CEC9]">
+                      {getCountryRegionLabel(country)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-4">
+                  <span className="rounded-full border border-white/10 bg-[#4E8C5D]/20 px-3 py-1 text-[11px] font-medium text-[#B9DDC2]">
+                    Hiking {formatScore(country.hikingLevel)}/5
+                  </span>
+                  <span className="rounded-full border border-[#D99E6B]/50 bg-[#D99E6B]/18 px-3 py-1 text-[11px] font-medium text-[#F2D2B0]">
+                    Roadtrip {formatScore(country.roadtripLevel)}/5
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       )}
 
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 px-4 pt-4 md:px-7 md:pt-6">
-        <nav className="pointer-events-auto mx-auto flex w-full max-w-7xl items-center justify-between rounded-full border border-white/14 bg-[#1A1E1CCC] px-4 py-3 shadow-[0_10px_40px_rgba(0,0,0,0.3)] backdrop-blur-[20px] md:px-6">
-          <div className="text-sm font-semibold tracking-tight text-[#F0F2F0] md:text-base">
-            Adventure Atlas
-          </div>
-          <div className="flex items-center gap-4 text-xs text-[#B8C0BA] md:gap-7 md:text-sm">
-            <Link className="transition hover:text-[#F0F2F0]" href="#overview">
-              Overview
-            </Link>
-            <Link className="transition hover:text-[#F0F2F0]" href="#about">
-              About
-            </Link>
-            <Link className="transition hover:text-[#F0F2F0]" href="#journal">
-              Journal
-            </Link>
-            <Link className="transition hover:text-[#F0F2F0]" href="/specialists">
-              Profile
-            </Link>
-          </div>
-        </nav>
-      </header>
-
-      <div className="pointer-events-none absolute left-4 top-24 z-30 rounded-xl border border-white/12 bg-[#1A1E1CCC] px-3 py-2 text-[11px] font-medium tracking-wide text-[#A9B2AC] backdrop-blur-[20px] md:left-7 md:top-24">
-        Hover to preview - click anywhere to build a trip plan
-      </div>
-
-      <div className="absolute right-4 top-24 z-30 flex flex-col overflow-hidden rounded-xl border border-white/12 bg-[#1A1E1CCC] shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-[20px] md:right-7 md:top-24">
-        <button
-          type="button"
-          onClick={() => nudgeZoom(0.55)}
-          className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
-          aria-label="Zoom in"
-        >
-          +
-        </button>
-        <div className="h-px bg-white/10" />
-        <button
-          type="button"
-          onClick={() => nudgeZoom(-0.55)}
-          className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
-          aria-label="Zoom out"
-        >
-          −
-        </button>
-      </div>
-
-      {tooltip ? (
-        <div
-          className="pointer-events-none fixed z-50 w-52 rounded-xl border border-white/14 bg-[#1A1E1CCC] p-3 text-xs text-[#E5E9E6] shadow-[0_18px_35px_rgba(0,0,0,0.42)] backdrop-blur-[20px]"
-          style={{
-            left: tooltip.x + 14,
-            top: tooltip.y + 14,
-          }}
-        >
-          <p className="font-medium tracking-tight">{tooltip.country.name}</p>
-          <p className="mt-1 text-[#B5C0B7]">
-            Hiking {formatScore(tooltip.country.hikingLevel)} / 5 · Roadtrip{" "}
-            {formatScore(tooltip.country.roadtripLevel)} / 5
-          </p>
-        </div>
-      ) : null}
-
-      {selectedCountry ? (
-        <>
+      <div className="absolute bottom-6 left-1/2 z-40 -translate-x-1/2">
+        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-[#121614]/80 p-1 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[20px]">
           <button
             type="button"
-            aria-label="Close country preview"
-            onPointerDown={clearSelectedCountry}
-            className="absolute inset-0 z-40 bg-black/10 md:hidden"
-          />
-          <CountryPreviewPanel country={selectedCountry} onClose={clearSelectedCountry} />
+            onClick={() => setViewMode("map")}
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+              viewMode === "map"
+                ? "bg-[#4E8C5D] text-white"
+                : "text-[#AEB9B1] hover:bg-white/10 hover:text-[#F0F2F0]"
+            }`}
+          >
+            Map
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+              viewMode === "list"
+                ? "bg-[#D99E6B] text-[#1A1E1C]"
+                : "text-[#AEB9B1] hover:bg-white/10 hover:text-[#F0F2F0]"
+            }`}
+          >
+            List
+          </button>
+        </div>
+      </div>
+
+      {viewMode === "map" ? (
+        <>
+          <div className="pointer-events-none absolute left-4 top-6 z-30 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-medium tracking-wide text-[#A9B2AC] backdrop-blur-[20px] md:left-7">
+            Hover to preview, click to open destination details
+          </div>
+
+          <div className="absolute right-4 top-6 z-30 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-[20px] md:right-7">
+            <button
+              type="button"
+              onClick={() => nudgeZoom(0.55)}
+              className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+            <div className="h-px bg-white/10" />
+            <button
+              type="button"
+              onClick={() => nudgeZoom(-0.55)}
+              className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+          </div>
+
+          {tooltip ? (
+            <div
+              className="pointer-events-none fixed z-50 w-52 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[#E5E9E6] shadow-[0_18px_35px_rgba(0,0,0,0.42)] backdrop-blur-[20px]"
+              style={{
+                left: tooltip.x + 14,
+                top: tooltip.y + 14,
+              }}
+            >
+              <p className="font-medium tracking-tight">{tooltip.country.name}</p>
+              <p className="mt-1 text-[#B5C0B7]">
+                Hiking {formatScore(tooltip.country.hikingLevel)} / 5 · Roadtrip{" "}
+                {formatScore(tooltip.country.roadtripLevel)} / 5
+              </p>
+            </div>
+          ) : null}
+
+          {selectedCountry ? (
+            <>
+              <button
+                type="button"
+                aria-label="Close country preview"
+                onPointerDown={clearSelectedCountry}
+                className="absolute inset-0 z-40 bg-black/10 md:hidden"
+              />
+              <CountryPreviewPanel country={selectedCountry} onClose={clearSelectedCountry} />
+            </>
+          ) : null}
         </>
       ) : null}
     </section>
