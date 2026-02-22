@@ -1,6 +1,7 @@
 "use client";
 
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { ExpressionSpecification } from "mapbox-gl";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MapboxMap, {
@@ -441,7 +442,7 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
       ["get", preferredNameField],
       ["get", fallbackNameField],
       ["get", "name"],
-    ] as const;
+    ] as unknown as ExpressionSpecification;
 
     const applyLocalizedMapLabels = () => {
       const layers = map.getStyle()?.layers ?? [];
