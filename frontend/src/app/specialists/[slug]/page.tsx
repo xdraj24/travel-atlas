@@ -7,6 +7,7 @@ import {
   formatCurrency,
   stripRichText,
 } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
 import { getRequestLocale } from "@/lib/locale.server";
 
 interface SpecialistDetailPageProps {
@@ -20,6 +21,7 @@ export default async function SpecialistDetailPage({
 }: SpecialistDetailPageProps) {
   const { slug } = await params;
   const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   const specialist = await fetchSpecialistBySlug(slug, locale);
   if (!specialist) notFound();
   const requestJoinHref = specialist.whatsappLink ?? specialist.instagramLink ?? "/specialists";
@@ -44,18 +46,22 @@ export default async function SpecialistDetailPage({
             </div>
 
             <div className="space-y-4 p-6 md:p-8">
-              <p className="text-xs uppercase tracking-[0.2em] text-[#AEB9B1]">Specialist Profile</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#AEB9B1]">
+                {dictionary.specialistDetail.profileLabel}
+              </p>
               <h1 className="text-4xl font-semibold tracking-tighter text-[#F0F2F0]">
                 {specialist.name}
               </h1>
               <p className="text-sm text-[#AEB9B1]">
                 {specialist.type === "local_advisor"
-                  ? "Local Advisor"
-                  : "Community Trip Leader"}
+                  ? dictionary.specialistDetail.typeLocalAdvisor
+                  : dictionary.specialistDetail.typeCommunityLeader}
               </p>
               <p className="text-sm text-[#CFD7D1]">
-                Rating: ⭐ {specialist.rating?.toFixed(1) ?? "N/A"} · Languages:{" "}
-                {specialist.languages?.join(", ") || "English"}
+                {dictionary.specialistDetail.ratingLabel}: ⭐{" "}
+                {specialist.rating?.toFixed(1) ?? dictionary.common.notAvailable} ·{" "}
+                {dictionary.specialistDetail.languagesLabel}:{" "}
+                {specialist.languages?.join(", ") || dictionary.specialistDetail.defaultLanguage}
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -64,7 +70,7 @@ export default async function SpecialistDetailPage({
                     href={`/countries/${specialist.country.slug}`}
                     className="inline-flex rounded-full border border-white/12 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#C8D1CB] transition hover:bg-white/10"
                   >
-                    Based in {specialist.country.name}
+                    {dictionary.specialistDetail.basedInPrefix} {specialist.country.name}
                   </Link>
                 ) : null}
 
@@ -74,7 +80,7 @@ export default async function SpecialistDetailPage({
                   rel={openRequestExternally ? "noopener noreferrer" : undefined}
                   className="inline-flex rounded-full bg-[var(--brand-primary)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#3F7650]"
                 >
-                  Request to Join
+                  {dictionary.specialistDetail.requestToJoin}
                 </a>
               </div>
 
@@ -87,7 +93,7 @@ export default async function SpecialistDetailPage({
 
         <SectionCard>
           <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
-            External Booking Links
+            {dictionary.specialistDetail.externalLinksHeading}
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {specialist.offersChat && specialist.whatsappLink ? (
@@ -97,7 +103,7 @@ export default async function SpecialistDetailPage({
                 rel="noopener noreferrer"
                 className="rounded-lg bg-[var(--brand-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3F7650]"
               >
-                Chat on WhatsApp
+                {dictionary.specialistDetail.chatOnWhatsapp}
               </a>
             ) : null}
             {specialist.instagramLink ? (
@@ -114,7 +120,9 @@ export default async function SpecialistDetailPage({
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Trips</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+            {dictionary.specialistDetail.tripsHeading}
+          </h2>
           {specialist.trips && specialist.trips.length > 0 ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {specialist.trips.map((trip) => (
@@ -124,8 +132,9 @@ export default async function SpecialistDetailPage({
                 >
                   <h3 className="text-lg font-semibold tracking-tighter text-[#F0F2F0]">{trip.title}</h3>
                   <p className="mt-1 text-sm text-[#AEB9B1]">
-                    {trip.durationDays ?? "?"} days · {formatCurrency(trip.price)} ·
-                    Difficulty {trip.difficulty ?? "N/A"}/5
+                    {trip.durationDays ?? dictionary.common.unknown} {dictionary.specialistDetail.daysLabel} ·{" "}
+                    {formatCurrency(trip.price, "USD", locale)} · {dictionary.specialistDetail.difficultyLabel}{" "}
+                    {trip.difficulty ?? dictionary.common.notAvailable}/5
                   </p>
                   {trip.description ? (
                     <p className="mt-2 text-sm text-[#C4CDC7]">
@@ -139,14 +148,14 @@ export default async function SpecialistDetailPage({
                       rel="noopener noreferrer"
                       className="mt-3 inline-flex rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-[#D1D9D3] transition hover:bg-white/10"
                     >
-                      Book Externally
+                      {dictionary.specialistDetail.bookExternally}
                     </a>
                   ) : null}
                 </article>
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-[#AEB9B1]">No published trips yet.</p>
+            <p className="mt-3 text-sm text-[#AEB9B1]">{dictionary.specialistDetail.noTrips}</p>
           )}
         </SectionCard>
       </div>

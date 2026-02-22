@@ -11,10 +11,13 @@ import {
 } from "lucide-react";
 
 import { stripRichText, type CountrySummary } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 
 interface CountryPreviewPanelProps {
   country: CountrySummary;
   onClose: () => void;
+  locale: AppLocale;
 }
 
 type SafetyStatus = "safe" | "warning" | "alert";
@@ -26,7 +29,7 @@ interface RatingDotsProps {
 }
 
 interface SafetyBadgeProps {
-  type: "Pregnancy" | "Infant";
+  label: string;
   status: SafetyStatus;
   note?: string;
 }
@@ -55,12 +58,12 @@ function RatingDots({ label, value, max = 5 }: RatingDotsProps) {
   );
 }
 
-function SafetyBadge({ type, status, note }: SafetyBadgeProps) {
+function SafetyBadge({ label, status, note }: SafetyBadgeProps) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-white/5 bg-white/5 p-3">
       <div className="flex items-center gap-2">
         <div className={`h-2 w-2 rounded-full ${safetyDotClasses[status]}`} />
-        <span className="text-sm font-medium text-text-primary">{type} Safe</span>
+        <span className="text-sm font-medium text-text-primary">{label}</span>
       </div>
       {note ? <p className="text-[11px] leading-tight text-text-secondary">{note}</p> : null}
     </div>
@@ -80,7 +83,8 @@ function isoCodeToFlag(isoCode?: string): string {
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 }
 
-function getPreviewDescription(country: CountrySummary): string {
+function getPreviewDescription(country: CountrySummary, locale: AppLocale): string {
+  const dictionary = getDictionary(locale);
   const cleaned = stripRichText(country.description);
   const firstSentence = cleaned.split(/[.!?]/)[0]?.trim();
   if (firstSentence && firstSentence.length >= 24) {
@@ -88,15 +92,15 @@ function getPreviewDescription(country: CountrySummary): string {
   }
 
   if ((country.hikingLevel ?? 0) >= 4 && (country.roadtripLevel ?? 0) >= 4) {
-    return "Big mountain energy with cinematic roads and high-impact views.";
+    return dictionary.countryPreview.previewMountainRoad;
   }
   if ((country.hikingLevel ?? 0) >= 4) {
-    return "Built for active days on ridgelines, forests, and alpine trails.";
+    return dictionary.countryPreview.previewHiking;
   }
   if ((country.roadtripLevel ?? 0) >= 4) {
-    return "A route-first destination with dramatic drives and hidden stops.";
+    return dictionary.countryPreview.previewRoadtrip;
   }
-  return "A curated destination pick with balanced nature and comfort.";
+  return dictionary.countryPreview.previewBalanced;
 }
 
 function getBudgetLevel(country: CountrySummary): number {
@@ -109,31 +113,37 @@ function getBudgetLevel(country: CountrySummary): number {
   return 1;
 }
 
-function getDaysLabel(country: CountrySummary): string {
+function getDaysLabel(country: CountrySummary, locale: AppLocale): string {
+  const dictionary = getDictionary(locale);
   if (country.minDays && country.optimalDays) {
     return `${country.minDays}-${country.optimalDays}`;
   }
   if (country.optimalDays) return String(country.optimalDays);
   if (country.minDays) return `${country.minDays}+`;
-  return "Flexible";
+  return dictionary.countryPreview.flexibleDays;
 }
 
-function getWonderDifficulty(level: number | undefined): string {
-  if (!level) return "Moderate";
-  if (level >= 4) return "Advanced";
-  if (level <= 2) return "Easy";
-  return "Moderate";
+function getWonderDifficulty(level: number | undefined, locale: AppLocale): string {
+  const dictionary = getDictionary(locale);
+  if (!level) return dictionary.countryPreview.wonderModerate;
+  if (level >= 4) return dictionary.countryPreview.wonderAdvanced;
+  if (level <= 2) return dictionary.countryPreview.wonderEasy;
+  return dictionary.countryPreview.wonderModerate;
 }
 
-function getRegionLabel(country: CountrySummary): string {
-  return country.isState ? "Regional Escape" : "Country Escape";
+function getRegionLabel(country: CountrySummary, locale: AppLocale): string {
+  const dictionary = getDictionary(locale);
+  return country.isState
+    ? dictionary.countryPreview.regionRegional
+    : dictionary.countryPreview.regionCountry;
 }
 
 function getWonders(country: CountrySummary) {
   return (country.wonders ?? []).slice(0, 5);
 }
 
-function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
+function PanelContent({ country, onClose, locale }: CountryPreviewPanelProps) {
+  const dictionary = getDictionary(locale);
   const hikingLevel = Math.max(0, Math.min(5, Math.round(country.hikingLevel ?? 0)));
   const roadtripLevel = Math.max(0, Math.min(5, Math.round(country.roadtripLevel ?? 0)));
   const beachLevel = Math.max(0, Math.min(5, Math.round(country.beachLevel ?? 0)));
@@ -149,10 +159,10 @@ function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
             <h2 className="text-2xl font-bold tracking-tight text-text-primary">{country.name}</h2>
           </div>
           <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-widest text-brand-highlight">
-            <MapPin size={12} /> {getRegionLabel(country)}
+            <MapPin size={12} /> {getRegionLabel(country, locale)}
           </p>
           <p className="pt-1 text-sm italic leading-snug text-text-secondary">
-            &quot;{getPreviewDescription(country)}&quot;
+            &quot;{getPreviewDescription(country, locale)}&quot;
           </p>
         </div>
         <div className="flex gap-2">
@@ -170,42 +180,50 @@ function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
 
       <div className="custom-scrollbar space-y-6 overflow-y-auto px-6 pb-28">
         <section className="space-y-1">
-          <RatingDots label="Hiking" value={hikingLevel} />
-          <RatingDots label="Roadtrip" value={roadtripLevel} />
-          <RatingDots label="Beaches" value={beachLevel} />
+          <RatingDots label={dictionary.countryPreview.hikingLabel} value={hikingLevel} />
+          <RatingDots label={dictionary.countryPreview.roadtripLabel} value={roadtripLevel} />
+          <RatingDots label={dictionary.countryPreview.beachesLabel} value={beachLevel} />
         </section>
 
         <section className="grid grid-cols-3 gap-2 border-y border-white/5 py-4 text-center">
           <div>
-            <p className="text-[10px] uppercase text-text-secondary">Min Days</p>
-            <p className="text-lg font-bold text-text-primary">{country.minDays ?? "?"}</p>
+            <p className="text-[10px] uppercase text-text-secondary">
+              {dictionary.countryPreview.minDaysLabel}
+            </p>
+            <p className="text-lg font-bold text-text-primary">
+              {country.minDays ?? dictionary.common.unknown}
+            </p>
           </div>
           <div className="border-x border-white/5">
-            <p className="text-[10px] uppercase text-text-secondary">Optimal</p>
-            <p className="text-lg font-bold text-text-primary">{getDaysLabel(country)}</p>
+            <p className="text-[10px] uppercase text-text-secondary">
+              {dictionary.countryPreview.optimalLabel}
+            </p>
+            <p className="text-lg font-bold text-text-primary">{getDaysLabel(country, locale)}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase text-text-secondary">Budget</p>
+            <p className="text-[10px] uppercase text-text-secondary">
+              {dictionary.countryPreview.budgetLabel}
+            </p>
             <p className="text-lg font-bold text-brand-primary">{"€".repeat(budgetLevel)}</p>
           </div>
         </section>
 
         <section className="grid grid-cols-2 gap-3">
           <SafetyBadge
-            type="Pregnancy"
+            label={`${dictionary.countryPreview.pregnancyLabel} ${dictionary.countryPreview.safeSuffix}`}
             status={getSafetyStatus(country.pregnancySafe)}
-            note="Low-altitude routes and high-access care zones available."
+            note={dictionary.countryPreview.pregnancyNote}
           />
           <SafetyBadge
-            type="Infant"
+            label={`${dictionary.countryPreview.infantLabel} ${dictionary.countryPreview.safeSuffix}`}
             status={getSafetyStatus(country.infantSafe)}
-            note="Avoid routes above 2500m for smoother acclimatization."
+            note={dictionary.countryPreview.infantNote}
           />
         </section>
 
         <section className="space-y-3">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">
-            Must See Wonders
+            {dictionary.countryPreview.mustSeeWonders}
           </h4>
           {wonders.length > 0 ? (
             <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
@@ -228,14 +246,14 @@ function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
                   </div>
                   <p className="truncate text-[11px] font-medium text-text-primary">{wonder.name}</p>
                   <p className="text-[9px] text-text-secondary">
-                    🥾 {getWonderDifficulty(wonder.hikingDifficulty)}
+                    🥾 {getWonderDifficulty(wonder.hikingDifficulty, locale)}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="rounded-xl border border-white/8 bg-white/5 p-3 text-xs text-text-secondary">
-              Click around to discover destinations with curated wonders and route-ready picks.
+              {dictionary.countryPreview.noWonders}
             </div>
           )}
         </section>
@@ -247,7 +265,7 @@ function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
             href={`/countries/${country.slug}`}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-earth-green py-4 font-bold text-white shadow-xl transition hover:bg-earth-hover"
           >
-            Explore {country.name} <ChevronRight size={18} />
+            {dictionary.countryPreview.explorePrefix} {country.name} <ChevronRight size={18} />
           </Link>
 
           <div className="grid grid-cols-2 gap-2">
@@ -255,13 +273,13 @@ function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
               href={`/countries/${country.slug}`}
               className="flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-xs font-medium text-text-primary transition hover:bg-white/10"
             >
-              <Compass size={14} /> Plan Trip
+              <Compass size={14} /> {dictionary.countryPreview.planTrip}
             </Link>
             <Link
               href="/specialists"
               className="flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-xs font-medium text-text-primary transition hover:bg-white/10"
             >
-              <MessageSquare size={14} /> Specialist
+              <MessageSquare size={14} /> {dictionary.countryPreview.specialist}
             </Link>
           </div>
         </div>
@@ -270,16 +288,16 @@ function PanelContent({ country, onClose }: CountryPreviewPanelProps) {
   );
 }
 
-export function CountryPreviewPanel({ country, onClose }: CountryPreviewPanelProps) {
+export function CountryPreviewPanel({ country, onClose, locale }: CountryPreviewPanelProps) {
   return (
     <>
       <aside className="glass-panel animate-in slide-in-from-right absolute bottom-6 right-6 top-6 z-50 hidden w-[380px] flex-col overflow-hidden rounded-3xl p-0 md:flex">
-        <PanelContent country={country} onClose={onClose} />
+        <PanelContent country={country} onClose={onClose} locale={locale} />
       </aside>
 
       <aside className="glass-panel animate-in slide-in-from-bottom fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] flex-col overflow-hidden rounded-t-3xl p-0 md:hidden">
         <div className="mx-auto mt-2 h-1.5 w-16 rounded-full bg-white/20" />
-        <PanelContent country={country} onClose={onClose} />
+        <PanelContent country={country} onClose={onClose} locale={locale} />
       </aside>
     </>
   );

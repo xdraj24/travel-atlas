@@ -1,13 +1,21 @@
 import Link from "next/link";
 
-const navItems = [
-  { href: "/?view=map#map", label: "Map" },
-  { href: "/?view=list#countries", label: "Countries" },
-  { href: "/specialists", label: "Specialists" },
-  { href: "/#journal", label: "Journal" },
-] as const;
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 
-export function TopNavbar() {
+interface TopNavbarProps {
+  locale: AppLocale;
+}
+
+export function TopNavbar({ locale }: TopNavbarProps) {
+  const dictionary = getDictionary(locale);
+  const navItems = [
+    { href: "/?view=map#map", label: dictionary.nav.map },
+    { href: "/?view=list#countries", label: dictionary.nav.countries },
+    { href: "/specialists", label: dictionary.nav.specialists },
+    { href: "/#journal", label: dictionary.nav.journal },
+  ] as const;
+
   return (
     <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#121614]/80 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 md:px-8">

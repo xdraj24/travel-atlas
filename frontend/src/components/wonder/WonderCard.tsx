@@ -1,12 +1,17 @@
 import Link from "next/link";
 
 import { type WonderSummary } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 
 interface WonderCardProps {
   wonder: WonderSummary;
+  locale: AppLocale;
 }
 
-export function WonderCard({ wonder }: WonderCardProps) {
+export function WonderCard({ wonder, locale }: WonderCardProps) {
+  const dictionary = getDictionary(locale);
+
   return (
     <Link
       href={`/wonders/${wonder.slug}`}
@@ -24,7 +29,7 @@ export function WonderCard({ wonder }: WonderCardProps) {
       <div className="space-y-2 p-4">
         <h3 className="text-lg font-semibold tracking-tighter text-[#F0F2F0]">{wonder.name}</h3>
         <p className="text-sm text-[#B3BDB7]">
-          {wonder.shortDescription ?? "Curated world wonder destination."}
+          {wonder.shortDescription ?? dictionary.wonderCard.fallbackDescription}
         </p>
       </div>
     </Link>

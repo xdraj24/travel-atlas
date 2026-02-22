@@ -14,10 +14,13 @@ import MapboxMap, {
 
 import { type CountrySummary } from "@/lib/api";
 import { CountryPreviewPanel } from "@/components/map/CountryPreviewPanel";
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 
 interface WorldMapProps {
   countries: CountrySummary[];
   initialView?: "map" | "list";
+  locale: AppLocale;
 }
 
 type FeatureId = string | number;
@@ -190,8 +193,14 @@ function getCountryFill(country: CountrySummary | undefined): string {
   return hasCountryContent(country) ? COUNTRY_ACTIVE_FILL : COUNTRY_DEFAULT_FILL;
 }
 
-function getCountryRegionLabel(country: CountrySummary): string {
-  return country.isState ? "Regional Escape" : "Country Escape";
+function getCountryRegionLabel(
+  country: CountrySummary,
+  labels: {
+    country: string;
+    regional: string;
+  },
+): string {
+  return country.isState ? labels.regional : labels.country;
 }
 
 function isFeatureId(value: unknown): value is FeatureId {
@@ -227,7 +236,8 @@ function resolveCountryFromProperties(
   return undefined;
 }
 
-export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
+export function WorldMap({ countries, initialView = "map", locale }: WorldMapProps) {
+  const dictionary = getDictionary(locale);
   const [selectedCountry, setSelectedCountry] = useState<CountrySummary | null>(null);
   const [tooltip, setTooltip] = useState<HoverTooltipState | null>(null);
   const [rawWorldGeoJson, setRawWorldGeoJson] = useState<WorldGeoJson | null>(null);
@@ -586,11 +596,7 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
           ) : (
             <div className="relative z-10 flex h-full w-full items-center justify-center px-6 text-center">
               <div className="max-w-md rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-[#D3DCD6] backdrop-blur-[20px]">
-                Add{" "}
-                <code className="rounded bg-black/30 px-1 py-0.5">
-                  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
-                </code>{" "}
-                to enable the interactive map.
+                {dictionary.worldMap.mapMissingToken}
               </div>
             </div>
           )}
@@ -620,17 +626,20 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
                       {country.name}
                     </h3>
                     <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#C6CEC9]">
-                      {getCountryRegionLabel(country)}
+                      {getCountryRegionLabel(country, {
+                        country: dictionary.worldMap.regionCountry,
+                        regional: dictionary.worldMap.regionRegional,
+                      })}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 p-4">
                   <span className="rounded-full border border-white/10 bg-[#4E8C5D]/20 px-3 py-1 text-[11px] font-medium text-[#B9DDC2]">
-                    Hiking {formatScore(country.hikingLevel)}/5
+                    {dictionary.worldMap.hikingLabel} {formatScore(country.hikingLevel)}/5
                   </span>
                   <span className="rounded-full border border-[#D99E6B]/50 bg-[#D99E6B]/18 px-3 py-1 text-[11px] font-medium text-[#F2D2B0]">
-                    Roadtrip {formatScore(country.roadtripLevel)}/5
+                    {dictionary.worldMap.roadtripLabel} {formatScore(country.roadtripLevel)}/5
                   </span>
                 </div>
               </Link>
@@ -650,7 +659,7 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
                 : "text-[#AEB9B1] hover:bg-white/10 hover:text-[#F0F2F0]"
             }`}
           >
-            Map
+            {dictionary.worldMap.mapTab}
           </button>
           <button
             type="button"
@@ -661,7 +670,7 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
                 : "text-[#AEB9B1] hover:bg-white/10 hover:text-[#F0F2F0]"
             }`}
           >
-            List
+            {dictionary.worldMap.listTab}
           </button>
         </div>
       </div>
@@ -669,7 +678,7 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
       {viewMode === "map" ? (
         <>
           <div className="pointer-events-none absolute left-4 top-6 z-30 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-medium tracking-wide text-[#A9B2AC] backdrop-blur-[20px] md:left-7">
-            Hover to preview, click to open destination details
+            {dictionary.worldMap.hoverInstruction}
           </div>
 
           <div className="absolute right-4 top-6 z-30 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 shadow-[0_12px_28px_rgba(0,0,0,0.35)] backdrop-blur-[20px] md:right-7">
@@ -677,7 +686,7 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
               type="button"
               onClick={() => nudgeZoom(0.55)}
               className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
-              aria-label="Zoom in"
+              aria-label={dictionary.worldMap.zoomInAria}
             >
               +
             </button>
@@ -686,7 +695,7 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
               type="button"
               onClick={() => nudgeZoom(-0.55)}
               className="h-10 w-10 text-lg font-semibold text-[#E8ECE9] transition hover:bg-white/10"
-              aria-label="Zoom out"
+              aria-label={dictionary.worldMap.zoomOutAria}
             >
               −
             </button>
@@ -702,7 +711,8 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
             >
               <p className="font-medium tracking-tight">{tooltip.country.name}</p>
               <p className="mt-1 text-[#B5C0B7]">
-                Hiking {formatScore(tooltip.country.hikingLevel)} / 5 · Roadtrip{" "}
+                {dictionary.worldMap.hikingLabel} {formatScore(tooltip.country.hikingLevel)} / 5 ·{" "}
+                {dictionary.worldMap.roadtripLabel}{" "}
                 {formatScore(tooltip.country.roadtripLevel)} / 5
               </p>
             </div>
@@ -712,11 +722,15 @@ export function WorldMap({ countries, initialView = "map" }: WorldMapProps) {
             <>
               <button
                 type="button"
-                aria-label="Close country preview"
+                aria-label={dictionary.worldMap.closeCountryPreviewAria}
                 onPointerDown={clearSelectedCountry}
                 className="absolute inset-0 z-40 bg-black/10 md:hidden"
               />
-              <CountryPreviewPanel country={selectedCountry} onClose={clearSelectedCountry} />
+              <CountryPreviewPanel
+                country={selectedCountry}
+                onClose={clearSelectedCountry}
+                locale={locale}
+              />
             </>
           ) : null}
         </>

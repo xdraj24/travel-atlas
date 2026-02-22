@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { WonderMarkerMap } from "@/components/wonder/WonderMarkerMap";
 import { fetchWonderBySlug, stripRichText } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 import { getRequestLocale } from "@/lib/locale.server";
 import { computeSafetyWithAltitudeFallback } from "@/lib/safety";
 
@@ -13,14 +15,15 @@ interface WonderPageProps {
   }>;
 }
 
-function SafetyPill({ label, safe }: { label: string; safe: boolean }) {
+function SafetyPill({ label, safe, locale }: { label: string; safe: boolean; locale: AppLocale }) {
+  const dictionary = getDictionary(locale);
   return (
     <span
       className={`rounded-full px-3 py-1 text-xs font-semibold ${
         safe ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
       }`}
     >
-      {label}: {safe ? "Safe" : "Caution"}
+      {label}: {safe ? dictionary.common.safe : dictionary.common.caution}
     </span>
   );
 }
@@ -28,6 +31,7 @@ function SafetyPill({ label, safe }: { label: string; safe: boolean }) {
 export default async function WonderPage({ params }: WonderPageProps) {
   const { slug } = await params;
   const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   const wonder = await fetchWonderBySlug(slug, locale);
   if (!wonder) notFound();
 
@@ -57,37 +61,55 @@ export default async function WonderPage({ params }: WonderPageProps) {
               {stripRichText(wonder.fullDescription ?? wonder.shortDescription)}
             </p>
             <div className="flex flex-wrap gap-2">
-              <SafetyPill label="Pregnancy" safe={computedSafety.pregnancySafe} />
-              <SafetyPill label="Infant" safe={computedSafety.infantSafe} />
+              <SafetyPill
+                label={dictionary.wonderPage.pregnancyLabel}
+                safe={computedSafety.pregnancySafe}
+                locale={locale}
+              />
+              <SafetyPill
+                label={dictionary.wonderPage.infantLabel}
+                safe={computedSafety.infantSafe}
+                locale={locale}
+              />
             </div>
           </div>
         </section>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Location & Stats</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">
+            {dictionary.wonderPage.locationStatsHeading}
+          </h2>
           <div className="mt-4 grid gap-4 md:grid-cols-[1.2fr_1fr]">
             <WonderMarkerMap
               lat={wonder.locationLat}
               lng={wonder.locationLng}
               label={wonder.name}
+              locale={locale}
             />
             <div className="grid gap-3">
               <div className="rounded-lg border border-stone-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-stone-500">Altitude</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500">
+                  {dictionary.wonderPage.altitudeLabel}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-stone-900">
-                  {wonder.altitudeMeters ?? "N/A"} m
+                  {wonder.altitudeMeters ?? dictionary.common.notAvailable} m
                 </p>
               </div>
               <div className="rounded-lg border border-stone-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-stone-500">Difficulty</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500">
+                  {dictionary.wonderPage.difficultyLabel}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-stone-900">
-                  {wonder.hikingDifficulty ?? "N/A"} / 5
+                  {wonder.hikingDifficulty ?? dictionary.common.notAvailable} / 5
                 </p>
               </div>
               <div className="rounded-lg border border-stone-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-stone-500">Coordinates</p>
+                <p className="text-xs uppercase tracking-wide text-stone-500">
+                  {dictionary.wonderPage.coordinatesLabel}
+                </p>
                 <p className="mt-1 text-sm font-semibold text-stone-800">
-                  {wonder.locationLat ?? "N/A"}, {wonder.locationLng ?? "N/A"}
+                  {wonder.locationLat ?? dictionary.common.notAvailable},{" "}
+                  {wonder.locationLng ?? dictionary.common.notAvailable}
                 </p>
               </div>
             </div>
@@ -95,7 +117,9 @@ export default async function WonderPage({ params }: WonderPageProps) {
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Linked Hikes</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">
+            {dictionary.wonderPage.linkedHikesHeading}
+          </h2>
           {wonder.hikes && wonder.hikes.length > 0 ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {wonder.hikes.map((hike) => (
@@ -105,7 +129,9 @@ export default async function WonderPage({ params }: WonderPageProps) {
                 >
                   <h3 className="text-lg font-semibold text-stone-900">{hike.name}</h3>
                   <p className="mt-1 text-sm text-stone-600">
-                    Difficulty {hike.difficulty ?? "N/A"} / 5 · {hike.distanceKm ?? "?"} km
+                    {dictionary.wonderPage.hikeDifficulty}{" "}
+                    {hike.difficulty ?? dictionary.common.notAvailable} / 5 ·{" "}
+                    {hike.distanceKm ?? dictionary.common.unknown} km
                   </p>
                   {hike.description ? (
                     <p className="mt-2 text-sm text-stone-700">
@@ -117,13 +143,15 @@ export default async function WonderPage({ params }: WonderPageProps) {
             </div>
           ) : (
             <p className="mt-3 text-sm text-stone-600">
-              No linked hikes available for this wonder.
+              {dictionary.wonderPage.noLinkedHikes}
             </p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Linked Countries</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">
+            {dictionary.wonderPage.linkedCountriesHeading}
+          </h2>
           {wonder.country && wonder.country.length > 0 ? (
             <div className="mt-4 flex flex-wrap gap-2">
               {wonder.country.map((country) => (
@@ -137,7 +165,7 @@ export default async function WonderPage({ params }: WonderPageProps) {
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-stone-600">No countries linked yet.</p>
+            <p className="mt-3 text-sm text-stone-600">{dictionary.wonderPage.noLinkedCountries}</p>
           )}
         </SectionCard>
       </div>

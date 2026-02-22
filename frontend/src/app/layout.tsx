@@ -28,7 +28,7 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body className={`${inter.variable} antialiased`}>
-        <TopNavbar />
+        <TopNavbar locale={locale} />
         {children}
         <AppFooter locale={locale} />
       </body>

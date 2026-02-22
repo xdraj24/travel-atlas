@@ -6,7 +6,7 @@ export const DEFAULT_LOCALE: AppLocale = "cs";
 export const LOCALE_COOKIE_NAME = "atlas-locale";
 
 const localeLabels: Record<AppLocale, string> = {
-  cs: "Czech",
+  cs: "Cestina",
   en: "English",
 };
 

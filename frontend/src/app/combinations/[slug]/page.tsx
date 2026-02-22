@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { SectionCard } from "@/components/ui/SectionCard";
 import { fetchCountryCombinationBySlug, stripRichText } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
 import { getRequestLocale } from "@/lib/locale.server";
 
 interface CombinationPageProps {
@@ -14,6 +15,7 @@ interface CombinationPageProps {
 export default async function CombinationPage({ params }: CombinationPageProps) {
   const { slug } = await params;
   const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   const combination = await fetchCountryCombinationBySlug(slug, locale);
   if (!combination) notFound();
 
@@ -22,7 +24,7 @@ export default async function CombinationPage({ params }: CombinationPageProps) 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <section className="rounded-2xl border border-stone-200 bg-white/85 p-6 shadow-sm">
           <p className="inline-flex rounded-full border border-[#bba98a] bg-[#f4ede1] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#6f5d43]">
-            Country Combination
+            {dictionary.combinationPage.badge}
           </p>
           <h1 className="mt-3 text-3xl font-bold text-stone-900">{combination.name}</h1>
           <p className="mt-2 text-sm text-stone-700">
@@ -30,16 +32,19 @@ export default async function CombinationPage({ params }: CombinationPageProps) 
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <div className="rounded-full bg-[#6f5d43] px-4 py-1 text-sm font-semibold text-white">
-              Min days: {combination.minDays ?? "N/A"}
+              {dictionary.combinationPage.minDaysLabel}: {combination.minDays ?? dictionary.common.notAvailable}
             </div>
             <div className="rounded-full bg-[#8f7b57] px-4 py-1 text-sm font-semibold text-white">
-              Optimal days: {combination.optimalDays ?? "N/A"}
+              {dictionary.combinationPage.optimalDaysLabel}:{" "}
+              {combination.optimalDays ?? dictionary.common.notAvailable}
             </div>
           </div>
         </section>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Countries</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">
+            {dictionary.combinationPage.countriesHeading}
+          </h2>
           {combination.countries && combination.countries.length > 0 ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
               {combination.countries.map((country) => (
@@ -53,12 +58,14 @@ export default async function CombinationPage({ params }: CombinationPageProps) 
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-stone-600">No countries linked yet.</p>
+            <p className="mt-3 text-sm text-stone-600">{dictionary.combinationPage.noCountries}</p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold text-stone-900">Route Description</h2>
+          <h2 className="text-2xl font-semibold text-stone-900">
+            {dictionary.combinationPage.routeDescriptionHeading}
+          </h2>
           <p className="mt-3 text-sm leading-relaxed text-stone-700">
             {stripRichText(combination.routeDescription)}
           </p>
