@@ -1,6 +1,7 @@
 "use client";
 
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { ExpressionSpecification } from "mapbox-gl";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MapboxMap, {
@@ -30,6 +31,8 @@ interface MapFeatureProperties extends Record<string, unknown> {
   NAME?: string;
   admin?: string;
   ADMIN?: string;
+  "ISO3166-1-Alpha-2"?: string;
+  "ISO3166-1-Alpha-3"?: string;
   iso_a2?: string;
   ISO_A2?: string;
   iso_a3?: string;
@@ -61,7 +64,7 @@ interface MapInteractionEvent {
 }
 
 const geographyUrl =
-  "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson";
+  "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
 
 const WORLD_SOURCE_ID = "world-countries";
 const WORLD_FILL_LAYER_ID = "world-countries-fill";
@@ -213,6 +216,18 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function textFieldContainsNameToken(value: unknown): boolean {
+  if (typeof value === "string") {
+    return /\{name(?:_[^}]*)?\}/i.test(value);
+  }
+
+  if (Array.isArray(value)) {
+    return JSON.stringify(value).includes("name");
+  }
+
+  return false;
+}
+
 function resolveCountryFromProperties(
   properties: Record<string, unknown>,
   countriesByIso: Map<string, CountrySummary>,
@@ -220,6 +235,8 @@ function resolveCountryFromProperties(
 ): CountrySummary | undefined {
   const geoName = getProperty(properties, ["name", "NAME", "admin", "ADMIN"]);
   const isoCode = getProperty(properties, [
+    "ISO3166-1-Alpha-2",
+    "ISO3166-1-Alpha-3",
     "iso_a2",
     "ISO_A2",
     "iso_a3",
@@ -411,6 +428,61 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
     setSelectedFeatureId(null);
     setTooltip(null);
   }, [worldGeoJson]);
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapReady) {
+      return;
+    }
+
+    const preferredNameField = locale === "cs" ? "name_cs" : "name_en";
+    const fallbackNameField = locale === "cs" ? "name_en" : "name";
+    const localizedNameExpression = [
+      "coalesce",
+      ["get", preferredNameField],
+      ["get", fallbackNameField],
+      ["get", "name"],
+    ] as unknown as ExpressionSpecification;
+
+    const applyLocalizedMapLabels = () => {
+      const layers = map.getStyle()?.layers ?? [];
+
+      for (const layer of layers) {
+        if (layer.type !== "symbol" || !map.getLayer(layer.id)) {
+          continue;
+        }
+
+        const textField = map.getLayoutProperty(layer.id, "text-field");
+        if (typeof textField === "undefined" || textField === null) {
+          continue;
+        }
+        if (!textFieldContainsNameToken(textField)) {
+          continue;
+        }
+
+        try {
+          if (typeof textField === "string") {
+            const localizedTemplate = textField.replace(
+              /\{name(?:_[^}]*)?\}/gi,
+              `{${preferredNameField}}`,
+            );
+            map.setLayoutProperty(layer.id, "text-field", localizedTemplate);
+          } else {
+            map.setLayoutProperty(layer.id, "text-field", localizedNameExpression);
+          }
+        } catch {
+          // Ignore style layers that reject runtime text-field localization overrides.
+        }
+      }
+    };
+
+    applyLocalizedMapLabels();
+    map.on("styledata", applyLocalizedMapLabels);
+
+    return () => {
+      map.off("styledata", applyLocalizedMapLabels);
+    };
+  }, [isMapReady, locale]);
 
   useEffect(() => {
     const currentMap = mapRef.current;
