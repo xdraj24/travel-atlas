@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import {
-  LOCALE_COOKIE_NAME,
   SUPPORTED_LOCALES,
   getLocaleLabel,
   type AppLocale,
@@ -18,12 +17,23 @@ export function FooterLanguageSwitcher({ locale }: FooterLanguageSwitcherProps) 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  async function persistLocale(nextLocale: AppLocale): Promise<void> {
+    await fetch("/api/locale", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ locale: nextLocale }),
+    });
+
+    router.refresh();
+  }
+
   const handleLanguageChange = (nextLocale: AppLocale) => {
     if (nextLocale === locale) return;
 
-    document.cookie = `${LOCALE_COOKIE_NAME}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
     startTransition(() => {
-      router.refresh();
+      void persistLocale(nextLocale);
     });
   };
 
