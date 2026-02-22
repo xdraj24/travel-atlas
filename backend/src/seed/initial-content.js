@@ -73,6 +73,14 @@ const IMAGE_SOURCES = {
   },
 };
 
+const BASE_LOCALE = 'cs';
+const FALLBACK_LOCALE = 'en';
+const LOCALES = [BASE_LOCALE, FALLBACK_LOCALE];
+const LOCALE_LABELS = {
+  cs: 'Czech (cs)',
+  en: 'English (en)',
+};
+
 const COUNTRY_SEED = [
   {
     name: 'Spain',
@@ -501,6 +509,178 @@ const COUNTRY_COMBINATION_SEED = [
   },
 ];
 
+const CS_TRANSLATIONS = {
+  countries: {
+    spain: {
+      name: 'Spanelsko',
+      description:
+        'Spanelsko kombinuje atlanticke utesy, stredomorske plaze a horske vnitrozemi. Oblibene trasy propojuji kulturni mesta s narodnimi parky, takze jde o jednu z nejflexibilnejsich evropskych destinaci pro roadtripy i aktivni itinerare.',
+    },
+    portugal: {
+      name: 'Portugalsko',
+      description:
+        'Portugalsko je kompaktni a snadno dostupne, s dramatickymi pobreznimi stezkami, plazemi vhodnymi pro surf a vinarskymi roadtripy. Vyborne funguje pro prvni cesty po Evrope se strednim rozpoctem.',
+    },
+    italy: {
+      name: 'Italie',
+      description:
+        'Italie nabizi kontrastni itinerare: alpsky trekking na severu, kulturni metropole ve stredu a pobrezni ostrovy na jihu. Je idealni pro cestovatele, kteri chteji kombinovat ikonicke pamatky s outdoorovym dobrodruzstvim.',
+    },
+    france: {
+      name: 'Francie',
+      description:
+        'Francie podporuje temer kazdy styl cestovani, od alpskych vrcholu pres atlanticka surferska mesta az po vinarske okruhy autem. Vzdalenosti jsou zvladnutelne vlakem i autem, takze planovani vice regionu je jednoduche.',
+    },
+    morocco: {
+      name: 'Maroko',
+      description:
+        'Maroko spojuje treky v pohori Atlas, odpocinek na atlantickem pobrezi a prenocovani na Sahare. Je to silna volba pro dobrodruzne cesty s vysokou rozmanitosti, teplym pocasim a kratsimi lety z jizni Evropy.',
+    },
+  },
+  regions: {
+    catalonia: {
+      name: 'Katalansko',
+      description:
+        'Katalansko propojuje stredomorske plaze s jednodennimi turami v Pyrenejich a silnou gastronomii kolem Barcelony a Girony.',
+    },
+    andalusia: {
+      name: 'Andalusie',
+      description:
+        'Andalusie je znama bilymi mestecky na kopcich, plazemi v teplem podnebi a snadnym cestovanim autem mezi Sevillou, Granadou a Malagou.',
+    },
+    'canary-islands': {
+      name: 'Kanarske ostrovy',
+      description:
+        'Kanarske ostrovy nabizeji celorocni slunce, sopecnou krajinu a rodinne pristupne itinerare mezi jednotlivymi ostrovy.',
+    },
+  },
+  wonders: {
+    'teide-national-park': {
+      name: 'Narodni park Teide',
+      shortDescription:
+        'Nejvyssi spanelska sopecna krajina s vychody slunce nad vrstvou mraku.',
+      fullDescription:
+        'Narodni park Teide je vysokohorsky sopecny ekosystem s lavovymi poli, vyhledy do krateru a permitovymi trasami na vrchol. Nejlepe se hodi pro cestovatele, kteri chteji narocny, ale mimoradne fotogenicky dobrodruzny den.',
+      tags: ['sopka', 'vychod-slunce', 'narodni-park'],
+    },
+    'tre-cime-di-lavaredo': {
+      name: 'Tre Cime di Lavaredo',
+      shortDescription: 'Klasicka ikona Dolomit s dramatickymi vapencovymi stity.',
+      fullDescription:
+        'Tre Cime patri mezi nejrozpoznatelnejsi alpske sceny v Evrope. Oblast nabizi okruhy od stredne narocnych panoramatickych prochazek az po prudsi hrebenove varianty s vyraznou vyhledovou odmenou.',
+      tags: ['alpy', 'dolomity', 'fotografie'],
+    },
+    'pena-palace-and-sintra-hills': {
+      name: 'Palac Pena a sintrske kopce',
+      shortDescription:
+        'Lesnate hrebety a historicka architektura na kopcich nedaleko Lisabonu.',
+      fullDescription:
+        'Sintra kombinuje kratke lesni stezky, scenicke vyhlidky a vyznamnou pamatkovou architekturu. Je idealni pro lehci turisticke dny s kulturnimi zastavkami a snadnym vlakovym spojenim z Lisabonu.',
+      tags: ['les', 'palac', 'jednodenni-vylet'],
+    },
+  },
+  hikes: {
+    'Teide Summit Trail': {
+      name: 'Vrcholova trasa Teide',
+      bestSeason: 'Jaro az podzim',
+      description:
+        'Vyrazna vrcholova trasa na povoleni pres sopecny teren se strmym zaverecnym usekem a vybornymi podminkami pro vychod slunce.',
+    },
+    'Tre Cime Panorama Circuit': {
+      name: 'Panoramaticky okruh Tre Cime',
+      bestSeason: 'Cerven az zari',
+      description:
+        'Klasicky dolomitsky okruh se sirokymi alpskymi vyhledy a vice rifugio zastavkami vhodny pro rodiny i skupiny s ruznou vykonnosti.',
+    },
+    'Sintra Ridge and Castle Loop': {
+      name: 'Hrebenovy a zamecky okruh Sintra',
+      bestSeason: 'Celorocne',
+      description:
+        'Stredne lehka trasa mechovitymi lesnimi stezkami propojujici vyhlidky u palace Pena a stare sintrske pesi cesty.',
+    },
+    'Imlil to Toubkal Refuge Approach': {
+      name: 'Vystup z Imlilu k chate Toubkal',
+      bestSeason: 'Jaro a podzim',
+      description:
+        'Kvalitni aklimatizacni den pres udoli Atlasu a serpentiny, casto vyuzivany pred pokusy o vrchol Jebel Toubkal.',
+    },
+  },
+  attractions: {
+    'Costa Brava Coastal Viewpoints': {
+      name: 'Pobrezni vyhlidky Costa Brava',
+      description:
+        'Fotogenicka rada vyhlidek na utesu a skrytych zatok idealni pro zastavky behem puldenniho roadtripu.',
+    },
+    'Algarve Sea Caves': {
+      name: 'Morske jeskyne Algarve',
+      description:
+        'Jeskyne pristupne lodi a klidne tyrkysove zatoky v okoli Lagosu a Benagilu.',
+    },
+    "Val d'Orcia Hill Towns": {
+      name: "Kopcova mestecka Val d'Orcia",
+      description:
+        'Zvlnena trasa Toskanskem propojujici fotogenicka stredoveka mestecka a vinarske silnice.',
+    },
+    'Annecy Lakeside Promenade': {
+      name: 'Jezerni promenada v Annecy',
+      description:
+        'Uvolnene alpske jezerni mesto s jednoduchymi cyklostezkami a vyhledy na horsky horizont.',
+    },
+    'Ouzoud Waterfalls': {
+      name: 'Vodopady Ouzoud',
+      description:
+        'Jedna z nejdostupnejsich soustav vodopadu v Maroku s vyhledy na reku a lehkymi turistickymi stezkami.',
+    },
+  },
+  specialists: {
+    'lucia-moreno': {
+      bio: 'Lucia sestavuje rodinne pristupne aktivni itinerare po jiznim Spanelsku, kde vyvazuje kratke scenicke tury s mistni gastronomii a kulturou.',
+      languages: ['Spanelstina', 'Anglictina'],
+    },
+    'joao-santos': {
+      bio: 'Joao vede male skupiny po portugalskem pobrezi a horskych vesnicich se zamerenim na komunitne vlastnene ubytovani.',
+      languages: ['Portugalstina', 'Anglictina', 'Spanelstina'],
+    },
+    'giulia-conti': {
+      bio: 'Giulia se soustredi na trasy v Dolomitech a severni Italii pro turisty, kteri chteji dobre zorganizovanou logistiku a stezky stredni az vyssi obtiznosti.',
+      languages: ['Italstina', 'Anglictina'],
+    },
+  },
+  trips: {
+    'andalusia-family-adventure-week': {
+      title: 'Rodinny dobrodruzny tyden v Andalusii',
+      description:
+        'Vyvazena trasa s kratkymi turami, bilymi vesnicemi a oddechovym casem na plazi navrzena pro rodiny a prvni navstevu Spanelska.',
+    },
+    'atlantic-villages-and-cliffs-circuit': {
+      title: 'Okruh atlantickych vesnic a utesu',
+      description:
+        'Pobrezni okruh Portugalskem s turami po promenadach, rybarskymi vesnicemi a komunitnimi zazitky v malych skupinach.',
+    },
+    'dolomites-basecamp-trek': {
+      title: 'Trekova zakladna v Dolomitech',
+      description:
+        'Vysoce scenicky alpsky tyden s obedy na horskych chatach, hrebenovymi vyhlidkami a postupnou aklimatizaci.',
+    },
+  },
+  combinations: {
+    'iberian-atlantic-loop': {
+      name: 'Ibersky atlanticky okruh',
+      description:
+        'Vyvazena trasa kombinujici gastronomicka mesta, surferske pobrezi a stredne lehke tury napric Iberskym poloostrovem.',
+      routeDescription:
+        'Zacnete v Portu, pokracujte na jih pres Lisabon a Algarve, prejedte do Andalusie a zakoncete cestu v Madridu nebo Barcelone.',
+    },
+    'mediterranean-to-alps-arc': {
+      name: 'Oblouk od Stredomori k Alpam',
+      description:
+        'Presunte se z tepleho stredomorskeho pobrezi do vysokohorskeho terenu pro kontrastni evropsky itinerar.',
+      routeDescription:
+        'Zacnete na spanelskem pobrezi, pokracujte pres jih Francie a zakoncete cestu horskymi treky na severu Italie.',
+    },
+  },
+};
+
 const ENTITY_UIDS = {
   country: 'api::country.country',
   wonder: 'api::wonder.wonder',
@@ -542,46 +722,172 @@ function withPublishData(data) {
   };
 }
 
-async function findOneByField(strapi, uid, field, value) {
+function uniqueCandidateValues(values) {
+  const seen = new Set();
+  const result = [];
+
+  for (const rawValue of values) {
+    if (rawValue === undefined || rawValue === null) continue;
+    const normalized =
+      typeof rawValue === 'string' ? rawValue.trim() : String(rawValue);
+    if (normalized.length === 0 || seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(typeof rawValue === 'string' ? rawValue.trim() : rawValue);
+  }
+
+  return result;
+}
+
+function createLocaleMap() {
+  const map = new Map();
+  for (const locale of LOCALES) {
+    map.set(locale, new Map());
+  }
+  return map;
+}
+
+function getLocalizedSeed(entry, locale, translations, key) {
+  if (locale !== BASE_LOCALE) return entry;
+  const overrides = translations[key];
+  if (!overrides) return entry;
+  return {
+    ...entry,
+    ...overrides,
+  };
+}
+
+async function findOneByField(strapi, uid, field, value, options = {}) {
+  const { locale } = options;
+
   if (strapi.entityService && typeof strapi.entityService.findMany === 'function') {
-    const entries = await strapi.entityService.findMany(uid, {
+    const query = {
       filters: { [field]: { $eq: value } },
       limit: 1,
-    });
+    };
+    if (locale) {
+      query.locale = locale;
+    }
+
+    const entries = await strapi.entityService.findMany(uid, query);
     return asArray(entries)[0] || null;
   }
 
+  const where = { [field]: value };
+  if (locale) {
+    where.locale = locale;
+  }
+
   const entries = await strapi.db.query(uid).findMany({
-    where: { [field]: value },
+    where,
     limit: 1,
   });
+
   return asArray(entries)[0] || null;
 }
 
-async function createEntry(strapi, uid, data) {
+async function createEntry(strapi, uid, data, options = {}) {
+  const { locale, localizations = [] } = options;
+  const payload = withPublishData({
+    ...data,
+    ...(locale ? { locale } : {}),
+    ...(localizations.length > 0 ? { localizations } : {}),
+  });
+
   if (strapi.entityService && typeof strapi.entityService.create === 'function') {
-    return strapi.entityService.create(uid, { data });
+    return strapi.entityService.create(uid, { data: payload });
   }
-  return strapi.db.query(uid).create({ data });
+
+  return strapi.db.query(uid).create({ data: payload });
 }
 
-async function updateEntry(strapi, uid, id, data) {
+async function updateEntry(strapi, uid, id, data, options = {}) {
+  const { locale, localizations = [] } = options;
+  const payload = withPublishData({
+    ...data,
+    ...(localizations.length > 0 ? { localizations } : {}),
+  });
+
   if (strapi.entityService && typeof strapi.entityService.update === 'function') {
-    return strapi.entityService.update(uid, id, { data });
+    const query = { data: payload };
+    if (locale) {
+      query.locale = locale;
+    }
+
+    return strapi.entityService.update(uid, id, query);
   }
+
   return strapi.db.query(uid).update({
     where: { id },
-    data,
+    data: payload,
   });
 }
 
-async function upsertByField(strapi, uid, field, value, data) {
-  const existing = await findOneByField(strapi, uid, field, value);
-  const payload = withPublishData(data);
-  if (existing && existing.id) {
-    return updateEntry(strapi, uid, existing.id, payload);
+async function upsertByField(strapi, uid, field, value, data, options = {}) {
+  const { locale, localizations = [], matchValues = [] } = options;
+  const candidates = uniqueCandidateValues([value, ...asArray(matchValues)]);
+  let existing = null;
+
+  for (const candidate of candidates) {
+    existing = await findOneByField(strapi, uid, field, candidate, { locale });
+    if (existing && existing.id) {
+      break;
+    }
   }
-  return createEntry(strapi, uid, payload);
+
+  if (existing && existing.id) {
+    return updateEntry(strapi, uid, existing.id, data, { locale, localizations });
+  }
+
+  return createEntry(strapi, uid, data, { locale, localizations });
+}
+
+async function ensureLocales(strapi) {
+  const localeQuery = strapi.db.query('plugin::i18n.locale');
+  if (!localeQuery) return;
+
+  const locales = asArray(await localeQuery.findMany());
+  const localesByCode = new Map(locales.map((locale) => [locale.code, locale]));
+
+  for (const code of LOCALES) {
+    const existing = localesByCode.get(code);
+    const data = {
+      code,
+      name: LOCALE_LABELS[code] || code,
+      isDefault: code === BASE_LOCALE,
+    };
+
+    if (!existing) {
+      const created = await localeQuery.create({ data });
+      localesByCode.set(code, created);
+      continue;
+    }
+
+    const updates = {};
+    if (existing.name !== data.name) {
+      updates.name = data.name;
+    }
+    if (Boolean(existing.isDefault) !== data.isDefault) {
+      updates.isDefault = data.isDefault;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await localeQuery.update({
+        where: { id: existing.id },
+        data: updates,
+      });
+    }
+  }
+
+  const updatedLocales = asArray(await localeQuery.findMany());
+  for (const locale of updatedLocales) {
+    const shouldBeDefault = locale.code === BASE_LOCALE;
+    if (Boolean(locale.isDefault) === shouldBeDefault) continue;
+
+    await localeQuery.update({
+      where: { id: locale.id },
+      data: { isDefault: shouldBeDefault },
+    });
+  }
 }
 
 async function ensureImage(strapi, imageMeta, cache) {
@@ -663,7 +969,7 @@ function compactIds(values) {
 }
 
 async function seedCountries(strapi, imageCache) {
-  const countryBySlug = new Map();
+  const countryBySlugByLocale = createLocaleMap();
 
   for (const country of COUNTRY_SEED) {
     const image = await ensureImage(strapi, IMAGE_SOURCES[country.image], imageCache).catch(
@@ -673,33 +979,48 @@ async function seedCountries(strapi, imageCache) {
       },
     );
 
-    const entry = await upsertByField(
-      strapi,
-      ENTITY_UIDS.country,
-      'slug',
-      country.slug,
-      {
-        name: country.name,
-        slug: country.slug,
-        isoCode: country.isoCode,
-        description: country.description,
-        hikingLevel: country.hikingLevel,
-        beachLevel: country.beachLevel,
-        roadtripLevel: country.roadtripLevel,
-        minDays: country.minDays,
-        optimalDays: country.optimalDays,
-        avgDirectFlightPrice: country.avgDirectFlightPrice,
-        avgCheapFlightPrice: country.avgCheapFlightPrice,
-        avgAccommodationPrice: country.avgAccommodationPrice,
-        avgFoodPricePerDay: country.avgFoodPricePerDay,
-        pregnancySafe: country.pregnancySafe,
-        infantSafe: country.infantSafe,
-        isState: false,
-        heroImage: idFromEntry(image),
-      },
-    );
+    for (const locale of LOCALES) {
+      const localizedCountry = getLocalizedSeed(
+        country,
+        locale,
+        CS_TRANSLATIONS.countries,
+        country.slug,
+      );
+      const baseEntry = countryBySlugByLocale.get(BASE_LOCALE).get(country.slug);
 
-    countryBySlug.set(country.slug, entry);
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.country,
+        'slug',
+        country.slug,
+        {
+          name: localizedCountry.name,
+          slug: country.slug,
+          isoCode: country.isoCode,
+          description: localizedCountry.description,
+          hikingLevel: country.hikingLevel,
+          beachLevel: country.beachLevel,
+          roadtripLevel: country.roadtripLevel,
+          minDays: country.minDays,
+          optimalDays: country.optimalDays,
+          avgDirectFlightPrice: country.avgDirectFlightPrice,
+          avgCheapFlightPrice: country.avgCheapFlightPrice,
+          avgAccommodationPrice: country.avgAccommodationPrice,
+          avgFoodPricePerDay: country.avgFoodPricePerDay,
+          pregnancySafe: country.pregnancySafe,
+          infantSafe: country.infantSafe,
+          isState: false,
+          heroImage: idFromEntry(image),
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+        },
+      );
+
+      countryBySlugByLocale.get(locale).set(country.slug, entry);
+    }
   }
 
   for (const region of REGION_SEED) {
@@ -710,55 +1031,82 @@ async function seedCountries(strapi, imageCache) {
       },
     );
 
-    const parentCountryId = idFromEntry(countryBySlug.get(region.parentCountry));
-    const entry = await upsertByField(
-      strapi,
-      ENTITY_UIDS.country,
-      'slug',
-      region.slug,
-      {
-        name: region.name,
-        slug: region.slug,
-        isoCode: region.isoCode,
-        description: region.description,
-        hikingLevel: region.hikingLevel,
-        beachLevel: region.beachLevel,
-        roadtripLevel: region.roadtripLevel,
-        minDays: region.minDays,
-        optimalDays: region.optimalDays,
-        avgDirectFlightPrice: region.avgDirectFlightPrice,
-        avgCheapFlightPrice: region.avgCheapFlightPrice,
-        avgAccommodationPrice: region.avgAccommodationPrice,
-        avgFoodPricePerDay: region.avgFoodPricePerDay,
-        pregnancySafe: region.pregnancySafe,
-        infantSafe: region.infantSafe,
-        isState: true,
-        parentCountry: parentCountryId,
-        heroImage: idFromEntry(image),
-      },
-    );
+    for (const locale of LOCALES) {
+      const localizedRegion = getLocalizedSeed(
+        region,
+        locale,
+        CS_TRANSLATIONS.regions,
+        region.slug,
+      );
+      const parentCountryId = idFromEntry(
+        countryBySlugByLocale.get(locale).get(region.parentCountry),
+      );
+      const baseEntry = countryBySlugByLocale.get(BASE_LOCALE).get(region.slug);
 
-    countryBySlug.set(region.slug, entry);
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.country,
+        'slug',
+        region.slug,
+        {
+          name: localizedRegion.name,
+          slug: region.slug,
+          isoCode: region.isoCode,
+          description: localizedRegion.description,
+          hikingLevel: region.hikingLevel,
+          beachLevel: region.beachLevel,
+          roadtripLevel: region.roadtripLevel,
+          minDays: region.minDays,
+          optimalDays: region.optimalDays,
+          avgDirectFlightPrice: region.avgDirectFlightPrice,
+          avgCheapFlightPrice: region.avgCheapFlightPrice,
+          avgAccommodationPrice: region.avgAccommodationPrice,
+          avgFoodPricePerDay: region.avgFoodPricePerDay,
+          pregnancySafe: region.pregnancySafe,
+          infantSafe: region.infantSafe,
+          isState: true,
+          parentCountry: parentCountryId,
+          heroImage: idFromEntry(image),
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+        },
+      );
+
+      countryBySlugByLocale.get(locale).set(region.slug, entry);
+    }
   }
 
-  for (const country of COUNTRY_SEED) {
-    const current = countryBySlug.get(country.slug);
-    const relatedIds = compactIds(
-      country.bestCombinedWith.map((slug) => idFromEntry(countryBySlug.get(slug))),
-    );
+  for (const locale of LOCALES) {
+    for (const country of COUNTRY_SEED) {
+      const current = countryBySlugByLocale.get(locale).get(country.slug);
+      const relatedIds = compactIds(
+        country.bestCombinedWith.map((slug) =>
+          idFromEntry(countryBySlugByLocale.get(locale).get(slug)),
+        ),
+      );
 
-    if (!current || !current.id) continue;
+      if (!current || !current.id) continue;
 
-    await updateEntry(strapi, ENTITY_UIDS.country, current.id, withPublishData({
-      bestCombinedWith: relatedIds,
-    }));
+      await updateEntry(
+        strapi,
+        ENTITY_UIDS.country,
+        current.id,
+        {
+          bestCombinedWith: relatedIds,
+        },
+        { locale },
+      );
+    }
   }
 
-  return countryBySlug;
+  return countryBySlugByLocale;
 }
 
-async function seedWonders(strapi, countryBySlug, imageCache) {
-  const wonderBySlug = new Map();
+async function seedWonders(strapi, countryBySlugByLocale, imageCache) {
+  const wonderBySlugByLocale = createLocaleMap();
 
   for (const wonder of WONDER_SEED) {
     const image = await ensureImage(strapi, IMAGE_SOURCES[wonder.image], imageCache).catch(
@@ -768,87 +1116,145 @@ async function seedWonders(strapi, countryBySlug, imageCache) {
       },
     );
 
-    const countryIds = compactIds(
-      wonder.countries.map((slug) => idFromEntry(countryBySlug.get(slug))),
-    );
+    for (const locale of LOCALES) {
+      const localizedWonder = getLocalizedSeed(
+        wonder,
+        locale,
+        CS_TRANSLATIONS.wonders,
+        wonder.slug,
+      );
+      const countryIds = compactIds(
+        wonder.countries.map((slug) =>
+          idFromEntry(countryBySlugByLocale.get(locale).get(slug)),
+        ),
+      );
+      const baseEntry = wonderBySlugByLocale.get(BASE_LOCALE).get(wonder.slug);
 
-    const entry = await upsertByField(
-      strapi,
-      ENTITY_UIDS.wonder,
-      'slug',
-      wonder.slug,
-      {
-        name: wonder.name,
-        slug: wonder.slug,
-        shortDescription: wonder.shortDescription,
-        fullDescription: wonder.fullDescription,
-        heroImage: idFromEntry(image),
-        country: countryIds,
-        locationLat: wonder.locationLat,
-        locationLng: wonder.locationLng,
-        hikingDifficulty: wonder.hikingDifficulty,
-        altitudeMeters: wonder.altitudeMeters,
-        pregnancySafe: wonder.pregnancySafe,
-        infantSafe: wonder.infantSafe,
-        tags: wonder.tags.map((label) => ({ label })),
-      },
-    );
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.wonder,
+        'slug',
+        wonder.slug,
+        {
+          name: localizedWonder.name,
+          slug: wonder.slug,
+          shortDescription: localizedWonder.shortDescription,
+          fullDescription: localizedWonder.fullDescription,
+          heroImage: idFromEntry(image),
+          country: countryIds,
+          locationLat: wonder.locationLat,
+          locationLng: wonder.locationLng,
+          hikingDifficulty: wonder.hikingDifficulty,
+          altitudeMeters: wonder.altitudeMeters,
+          pregnancySafe: wonder.pregnancySafe,
+          infantSafe: wonder.infantSafe,
+          tags: asArray(localizedWonder.tags).map((label) => ({ label })),
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+        },
+      );
 
-    wonderBySlug.set(wonder.slug, entry);
+      wonderBySlugByLocale.get(locale).set(wonder.slug, entry);
+    }
   }
 
-  return wonderBySlug;
+  return wonderBySlugByLocale;
 }
 
-async function seedHikes(strapi, countryBySlug, wonderBySlug) {
+async function seedHikes(strapi, countryBySlugByLocale, wonderBySlugByLocale) {
+  const hikeByNameByLocale = createLocaleMap();
+
   for (const hike of HIKE_SEED) {
-    const countryId = idFromEntry(countryBySlug.get(hike.country));
-    if (!countryId) continue;
+    for (const locale of LOCALES) {
+      const localizedHike = getLocalizedSeed(hike, locale, CS_TRANSLATIONS.hikes, hike.name);
+      const countryId = idFromEntry(countryBySlugByLocale.get(locale).get(hike.country));
+      if (!countryId) continue;
 
-    const wonderId = hike.wonder ? idFromEntry(wonderBySlug.get(hike.wonder)) : undefined;
+      const wonderId = hike.wonder
+        ? idFromEntry(wonderBySlugByLocale.get(locale).get(hike.wonder))
+        : undefined;
+      const baseEntry = hikeByNameByLocale.get(BASE_LOCALE).get(hike.name);
+      const matchValues =
+        locale === BASE_LOCALE && localizedHike.name !== hike.name ? [hike.name] : [];
 
-    await upsertByField(
-      strapi,
-      ENTITY_UIDS.hike,
-      'name',
-      hike.name,
-      {
-        name: hike.name,
-        difficulty: hike.difficulty,
-        elevationGain: hike.elevationGain,
-        distanceKm: hike.distanceKm,
-        durationHours: hike.durationHours,
-        bestSeason: hike.bestSeason,
-        description: hike.description,
-        country: countryId,
-        wonder: wonderId,
-      },
-    );
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.hike,
+        'name',
+        localizedHike.name,
+        {
+          name: localizedHike.name,
+          difficulty: hike.difficulty,
+          elevationGain: hike.elevationGain,
+          distanceKm: hike.distanceKm,
+          durationHours: hike.durationHours,
+          bestSeason: localizedHike.bestSeason,
+          description: localizedHike.description,
+          country: countryId,
+          wonder: wonderId,
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+          matchValues,
+        },
+      );
+
+      hikeByNameByLocale.get(locale).set(hike.name, entry);
+    }
   }
 }
 
-async function seedAttractions(strapi, countryBySlug) {
+async function seedAttractions(strapi, countryBySlugByLocale) {
+  const attractionByNameByLocale = createLocaleMap();
+
   for (const attraction of ATTRACTION_SEED) {
-    const countryId = idFromEntry(countryBySlug.get(attraction.country));
-    if (!countryId) continue;
+    for (const locale of LOCALES) {
+      const localizedAttraction = getLocalizedSeed(
+        attraction,
+        locale,
+        CS_TRANSLATIONS.attractions,
+        attraction.name,
+      );
+      const countryId = idFromEntry(countryBySlugByLocale.get(locale).get(attraction.country));
+      if (!countryId) continue;
 
-    await upsertByField(
-      strapi,
-      ENTITY_UIDS.attraction,
-      'name',
-      attraction.name,
-      {
-        name: attraction.name,
-        type: attraction.type,
-        description: attraction.description,
-        country: countryId,
-      },
-    );
+      const baseEntry = attractionByNameByLocale.get(BASE_LOCALE).get(attraction.name);
+      const matchValues =
+        locale === BASE_LOCALE && localizedAttraction.name !== attraction.name
+          ? [attraction.name]
+          : [];
+
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.attraction,
+        'name',
+        localizedAttraction.name,
+        {
+          name: localizedAttraction.name,
+          type: attraction.type,
+          description: localizedAttraction.description,
+          country: countryId,
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+          matchValues,
+        },
+      );
+
+      attractionByNameByLocale.get(locale).set(attraction.name, entry);
+    }
   }
 }
 
-async function seedSpecialists(strapi, countryBySlug, imageCache) {
-  const specialistBySlug = new Map();
+async function seedSpecialists(strapi, countryBySlugByLocale, imageCache) {
+  const specialistBySlugByLocale = createLocaleMap();
 
   for (const specialist of SPECIALIST_SEED) {
     const image = await ensureImage(strapi, IMAGE_SOURCES[specialist.image], imageCache).catch(
@@ -858,88 +1264,141 @@ async function seedSpecialists(strapi, countryBySlug, imageCache) {
       },
     );
 
-    const countryId = idFromEntry(countryBySlug.get(specialist.country));
-    const featuredCountryIds = compactIds(
-      specialist.featuredInCountries.map((slug) => idFromEntry(countryBySlug.get(slug))),
-    );
+    for (const locale of LOCALES) {
+      const localizedSpecialist = getLocalizedSeed(
+        specialist,
+        locale,
+        CS_TRANSLATIONS.specialists,
+        specialist.slug,
+      );
+      const countryId = idFromEntry(
+        countryBySlugByLocale.get(locale).get(specialist.country),
+      );
+      const featuredCountryIds = compactIds(
+        specialist.featuredInCountries.map((slug) =>
+          idFromEntry(countryBySlugByLocale.get(locale).get(slug)),
+        ),
+      );
+      const baseEntry = specialistBySlugByLocale.get(BASE_LOCALE).get(specialist.slug);
 
-    const entry = await upsertByField(
-      strapi,
-      ENTITY_UIDS.specialist,
-      'slug',
-      specialist.slug,
-      {
-        name: specialist.name,
-        slug: specialist.slug,
-        type: specialist.type,
-        bio: specialist.bio,
-        profileImage: idFromEntry(image),
-        country: countryId,
-        rating: specialist.rating,
-        languages: specialist.languages,
-        offersChat: specialist.offersChat,
-        offersTrips: specialist.offersTrips,
-        tripPriceFrom: specialist.tripPriceFrom,
-        whatsappLink: specialist.whatsappLink,
-        instagramLink: specialist.instagramLink,
-        featuredInCountries: featuredCountryIds,
-      },
-    );
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.specialist,
+        'slug',
+        specialist.slug,
+        {
+          name: localizedSpecialist.name,
+          slug: specialist.slug,
+          type: specialist.type,
+          bio: localizedSpecialist.bio,
+          profileImage: idFromEntry(image),
+          country: countryId,
+          rating: specialist.rating,
+          languages: localizedSpecialist.languages,
+          offersChat: specialist.offersChat,
+          offersTrips: specialist.offersTrips,
+          tripPriceFrom: specialist.tripPriceFrom,
+          whatsappLink: specialist.whatsappLink,
+          instagramLink: specialist.instagramLink,
+          featuredInCountries: featuredCountryIds,
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+        },
+      );
 
-    specialistBySlug.set(specialist.slug, entry);
+      specialistBySlugByLocale.get(locale).set(specialist.slug, entry);
+    }
   }
 
-  return specialistBySlug;
+  return specialistBySlugByLocale;
 }
 
-async function seedTrips(strapi, specialistBySlug, countryBySlug) {
+async function seedTrips(strapi, specialistBySlugByLocale, countryBySlugByLocale) {
+  const tripBySlugByLocale = createLocaleMap();
+
   for (const trip of TRIP_SEED) {
-    const specialistId = idFromEntry(specialistBySlug.get(trip.specialist));
-    const countryId = idFromEntry(countryBySlug.get(trip.country));
-    if (!specialistId || !countryId) continue;
+    for (const locale of LOCALES) {
+      const localizedTrip = getLocalizedSeed(trip, locale, CS_TRANSLATIONS.trips, trip.slug);
+      const specialistId = idFromEntry(
+        specialistBySlugByLocale.get(locale).get(trip.specialist),
+      );
+      const countryId = idFromEntry(countryBySlugByLocale.get(locale).get(trip.country));
+      if (!specialistId || !countryId) continue;
 
-    await upsertByField(
-      strapi,
-      ENTITY_UIDS.trip,
-      'slug',
-      trip.slug,
-      {
-        title: trip.title,
-        slug: trip.slug,
-        specialist: specialistId,
-        country: countryId,
-        durationDays: trip.durationDays,
-        price: trip.price,
-        difficulty: trip.difficulty,
-        maxGroupSize: trip.maxGroupSize,
-        description: trip.description,
-        startDates: trip.startDates.map((date) => ({ date })),
-      },
-    );
+      const baseEntry = tripBySlugByLocale.get(BASE_LOCALE).get(trip.slug);
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.trip,
+        'slug',
+        trip.slug,
+        {
+          title: localizedTrip.title,
+          slug: trip.slug,
+          specialist: specialistId,
+          country: countryId,
+          durationDays: trip.durationDays,
+          price: trip.price,
+          difficulty: trip.difficulty,
+          maxGroupSize: trip.maxGroupSize,
+          description: localizedTrip.description,
+          startDates: trip.startDates.map((date) => ({ date })),
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+        },
+      );
+
+      tripBySlugByLocale.get(locale).set(trip.slug, entry);
+    }
   }
 }
 
-async function seedCountryCombinations(strapi, countryBySlug) {
-  for (const combination of COUNTRY_COMBINATION_SEED) {
-    const countryIds = compactIds(
-      combination.countries.map((slug) => idFromEntry(countryBySlug.get(slug))),
-    );
+async function seedCountryCombinations(strapi, countryBySlugByLocale) {
+  const combinationBySlugByLocale = createLocaleMap();
 
-    await upsertByField(
-      strapi,
-      ENTITY_UIDS.combination,
-      'slug',
-      combination.slug,
-      {
-        name: combination.name,
-        slug: combination.slug,
-        description: combination.description,
-        minDays: combination.minDays,
-        optimalDays: combination.optimalDays,
-        routeDescription: combination.routeDescription,
-        countries: countryIds,
-      },
-    );
+  for (const combination of COUNTRY_COMBINATION_SEED) {
+    for (const locale of LOCALES) {
+      const localizedCombination = getLocalizedSeed(
+        combination,
+        locale,
+        CS_TRANSLATIONS.combinations,
+        combination.slug,
+      );
+      const countryIds = compactIds(
+        combination.countries.map((slug) =>
+          idFromEntry(countryBySlugByLocale.get(locale).get(slug)),
+        ),
+      );
+      const baseEntry = combinationBySlugByLocale.get(BASE_LOCALE).get(combination.slug);
+
+      const entry = await upsertByField(
+        strapi,
+        ENTITY_UIDS.combination,
+        'slug',
+        combination.slug,
+        {
+          name: localizedCombination.name,
+          slug: combination.slug,
+          description: localizedCombination.description,
+          minDays: combination.minDays,
+          optimalDays: combination.optimalDays,
+          routeDescription: localizedCombination.routeDescription,
+          countries: countryIds,
+        },
+        {
+          locale,
+          localizations:
+            locale === BASE_LOCALE ? [] : compactIds([idFromEntry(baseEntry)]),
+        },
+      );
+
+      combinationBySlugByLocale.get(locale).set(combination.slug, entry);
+    }
   }
 }
 
@@ -948,16 +1407,23 @@ async function runInitialContentSeed(strapi) {
 
   strapi.log.info('[seed] Bootstrapping initial countries, trips, and images');
   strapi.log.info('[seed] Using royalty-free images licensed via Pexels');
+  strapi.log.info(`[seed] Ensuring locales: ${LOCALES.join(', ')} (default: ${BASE_LOCALE})`);
 
-  const countryBySlug = await seedCountries(strapi, imageCache);
-  const wonderBySlug = await seedWonders(strapi, countryBySlug, imageCache);
+  await ensureLocales(strapi);
 
-  await seedHikes(strapi, countryBySlug, wonderBySlug);
-  await seedAttractions(strapi, countryBySlug);
+  const countryBySlugByLocale = await seedCountries(strapi, imageCache);
+  const wonderBySlugByLocale = await seedWonders(strapi, countryBySlugByLocale, imageCache);
 
-  const specialistBySlug = await seedSpecialists(strapi, countryBySlug, imageCache);
-  await seedTrips(strapi, specialistBySlug, countryBySlug);
-  await seedCountryCombinations(strapi, countryBySlug);
+  await seedHikes(strapi, countryBySlugByLocale, wonderBySlugByLocale);
+  await seedAttractions(strapi, countryBySlugByLocale);
+
+  const specialistBySlugByLocale = await seedSpecialists(
+    strapi,
+    countryBySlugByLocale,
+    imageCache,
+  );
+  await seedTrips(strapi, specialistBySlugByLocale, countryBySlugByLocale);
+  await seedCountryCombinations(strapi, countryBySlugByLocale);
 
   strapi.log.info('[seed] Initial content seeding complete');
 }
