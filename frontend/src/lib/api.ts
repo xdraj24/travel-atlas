@@ -615,9 +615,13 @@ export function stripRichText(value?: string | null): string {
 export function formatCurrency(
   value: number | undefined,
   currency = "USD",
+  locale: AppLocale = "en",
 ): string {
   if (value === undefined) return "N/A";
-  return new Intl.NumberFormat("en-US", {
+
+  const intlLocale = locale === "cs" ? "cs-CZ" : "en-US";
+
+  return new Intl.NumberFormat(intlLocale, {
     style: "currency",
     currency,
     maximumFractionDigits: 0,

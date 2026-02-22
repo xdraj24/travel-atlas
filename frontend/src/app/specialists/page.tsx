@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SpecialistCard } from "@/components/specialist/SpecialistCard";
 import { fetchSpecialists } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
 import { type SearchParams } from "@/lib/filters";
 import { getRequestLocale } from "@/lib/locale.server";
 
@@ -22,6 +23,7 @@ export default async function SpecialistsPage({
   const params = await searchParams;
   const tab = resolveTab(typeof params.tab === "string" ? params.tab : undefined);
   const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
 
   const specialists = await fetchSpecialists({ type: tab, locale });
 
@@ -30,10 +32,10 @@ export default async function SpecialistsPage({
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tighter text-[#F0F2F0]">
-            Travel Specialists
+            {dictionary.specialistsPage.title}
           </h1>
           <p className="text-sm text-[#B3BDB7]">
-            Connect with local advisors and community trip leaders.
+            {dictionary.specialistsPage.subtitle}
           </p>
         </header>
 
@@ -46,7 +48,7 @@ export default async function SpecialistsPage({
                 : "border border-white/12 bg-white/5 text-[#C2CBC6] hover:bg-white/10"
             }`}
           >
-            Local Advisors
+            {dictionary.specialistsPage.localAdvisorsTab}
           </Link>
           <Link
             href="/specialists?tab=community_leader"
@@ -56,19 +58,19 @@ export default async function SpecialistsPage({
                 : "border border-white/12 bg-white/5 text-[#C2CBC6] hover:bg-white/10"
             }`}
           >
-            Community Trip Leaders
+            {dictionary.specialistsPage.communityLeadersTab}
           </Link>
         </div>
 
         {specialists.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {specialists.map((specialist) => (
-              <SpecialistCard key={specialist.id} specialist={specialist} />
+              <SpecialistCard key={specialist.id} specialist={specialist} locale={locale} />
             ))}
           </section>
         ) : (
           <section className="rounded-xl border border-white/12 bg-white/5 p-6 text-sm text-[#B3BDB7] backdrop-blur-[20px]">
-            No specialists found for this tab.
+            {dictionary.specialistsPage.noSpecialists}
           </section>
         )}
       </div>

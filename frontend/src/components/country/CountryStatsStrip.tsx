@@ -1,26 +1,31 @@
 import { formatCurrency, type Country } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 
 interface CountryStatsStripProps {
   country: Country;
+  locale: AppLocale;
 }
 
-export function CountryStatsStrip({ country }: CountryStatsStripProps) {
+export function CountryStatsStrip({ country, locale }: CountryStatsStripProps) {
+  const dictionary = getDictionary(locale);
+
   const items = [
     {
-      label: "Avg direct flight",
-      value: formatCurrency(country.avgDirectFlightPrice),
+      label: dictionary.countryStats.avgDirectFlight,
+      value: formatCurrency(country.avgDirectFlightPrice, "USD", locale),
     },
     {
-      label: "Avg cheap flight",
-      value: formatCurrency(country.avgCheapFlightPrice),
+      label: dictionary.countryStats.avgCheapFlight,
+      value: formatCurrency(country.avgCheapFlightPrice, "USD", locale),
     },
     {
-      label: "Accommodation / night",
-      value: formatCurrency(country.avgAccommodationPrice),
+      label: dictionary.countryStats.accommodationPerNight,
+      value: formatCurrency(country.avgAccommodationPrice, "USD", locale),
     },
     {
-      label: "Food / day",
-      value: formatCurrency(country.avgFoodPricePerDay),
+      label: dictionary.countryStats.foodPerDay,
+      value: formatCurrency(country.avgFoodPricePerDay, "USD", locale),
     },
   ];
 

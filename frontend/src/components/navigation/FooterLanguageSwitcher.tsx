@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
+import { getDictionary } from "@/lib/dictionary";
 import {
   SUPPORTED_LOCALES,
   getLocaleLabel,
@@ -16,6 +17,7 @@ interface FooterLanguageSwitcherProps {
 export function FooterLanguageSwitcher({ locale }: FooterLanguageSwitcherProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const dictionary = getDictionary(locale);
 
   async function persistLocale(nextLocale: AppLocale): Promise<void> {
     await fetch("/api/locale", {
@@ -40,7 +42,7 @@ export function FooterLanguageSwitcher({ locale }: FooterLanguageSwitcherProps) 
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs font-medium uppercase tracking-[0.16em] text-[#9BA7A0]">
-        Language
+        {dictionary.footer.language}
       </span>
 
       <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">

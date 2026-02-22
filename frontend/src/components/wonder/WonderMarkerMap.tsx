@@ -2,16 +2,21 @@
 
 import Map, { Marker } from "react-map-gl/mapbox";
 
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
+
 interface WonderMarkerMapProps {
   lat?: number;
   lng?: number;
   label: string;
+  locale: AppLocale;
 }
 
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/outdoors-v12";
 
-export function WonderMarkerMap({ lat, lng, label }: WonderMarkerMapProps) {
+export function WonderMarkerMap({ lat, lng, label, locale }: WonderMarkerMapProps) {
+  const dictionary = getDictionary(locale);
   const hasMarker =
     typeof lat === "number" &&
     Number.isFinite(lat) &&
@@ -51,7 +56,7 @@ export function WonderMarkerMap({ lat, lng, label }: WonderMarkerMapProps) {
         </div>
       ) : (
         <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 text-center text-xs text-stone-600">
-          Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to render this map preview.
+          {dictionary.wonderMarkerMap.missingToken}
         </div>
       )}
     </div>

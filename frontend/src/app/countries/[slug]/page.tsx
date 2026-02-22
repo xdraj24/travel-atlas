@@ -7,6 +7,8 @@ import { SpecialistCard } from "@/components/specialist/SpecialistCard";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { WonderCard } from "@/components/wonder/WonderCard";
 import { fetchCountryBySlug, stripRichText } from "@/lib/api";
+import { getDictionary } from "@/lib/dictionary";
+import { type AppLocale } from "@/lib/locale";
 import { getRequestLocale } from "@/lib/locale.server";
 
 interface CountryPageProps {
@@ -15,7 +17,8 @@ interface CountryPageProps {
   }>;
 }
 
-function SafetyBadge({ label, safe }: { label: string; safe?: boolean }) {
+function SafetyBadge({ label, safe, locale }: { label: string; safe?: boolean; locale: AppLocale }) {
+  const dictionary = getDictionary(locale);
   const isSafe = safe ?? false;
   return (
     <div
@@ -25,7 +28,7 @@ function SafetyBadge({ label, safe }: { label: string; safe?: boolean }) {
           : "border-rose-300/30 bg-rose-500/10 text-rose-200"
       }`}
     >
-      {label}: {isSafe ? "Safe" : "Caution"}
+      {label}: {isSafe ? dictionary.common.safe : dictionary.common.caution}
     </div>
   );
 }
@@ -33,6 +36,7 @@ function SafetyBadge({ label, safe }: { label: string; safe?: boolean }) {
 export default async function CountryPage({ params }: CountryPageProps) {
   const { slug } = await params;
   const locale = await getRequestLocale();
+  const dictionary = getDictionary(locale);
   const country = await fetchCountryBySlug(slug, locale);
   if (!country) notFound();
 
@@ -44,28 +48,32 @@ export default async function CountryPage({ params }: CountryPageProps) {
             href={`/countries/${country.parentCountry.slug}`}
             className="inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-white/5 px-4 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#C4CDC8]"
           >
-            ← Back to {country.parentCountry.name}
+            ← {dictionary.countryPage.backToPrefix} {country.parentCountry.name}
           </Link>
         ) : null}
 
-        <CountryHero country={country} />
-        <CountryStatsStrip country={country} />
+        <CountryHero country={country} locale={locale} />
+        <CountryStatsStrip country={country} locale={locale} />
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Wonders</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+            {dictionary.countryPage.wondersHeading}
+          </h2>
           {country.wonders && country.wonders.length > 0 ? (
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {country.wonders.map((wonder) => (
-                <WonderCard key={wonder.id} wonder={wonder} />
+                <WonderCard key={wonder.id} wonder={wonder} locale={locale} />
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-[#AEB9B1]">No wonders published yet.</p>
+            <p className="mt-3 text-sm text-[#AEB9B1]">{dictionary.countryPage.noWonders}</p>
           )}
         </SectionCard>
 
         <SectionCard>
-          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Hikes</h2>
+          <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+            {dictionary.countryPage.hikesHeading}
+          </h2>
           {country.hikes && country.hikes.length > 0 ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {country.hikes.map((hike) => (
@@ -75,8 +83,10 @@ export default async function CountryPage({ params }: CountryPageProps) {
                 >
                   <h3 className="text-lg font-semibold tracking-tighter text-[#F0F2F0]">{hike.name}</h3>
                   <p className="mt-1 text-sm text-[#AEB9B1]">
-                    Difficulty {hike.difficulty ?? "N/A"} / 5 · {hike.distanceKm ?? "?"} km ·{" "}
-                    {hike.durationHours ?? "?"} hrs
+                    {dictionary.countryPage.hikeDifficulty}{" "}
+                    {hike.difficulty ?? dictionary.common.notAvailable} / 5 ·{" "}
+                    {hike.distanceKm ?? dictionary.common.unknown} km ·{" "}
+                    {hike.durationHours ?? dictionary.common.unknown} {dictionary.countryPage.hoursShort}
                   </p>
                   {hike.description ? (
                     <p className="mt-2 text-sm text-[#C3CCC6]">
@@ -87,30 +97,30 @@ export default async function CountryPage({ params }: CountryPageProps) {
               ))}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-[#AEB9B1]">No hikes published yet.</p>
+            <p className="mt-3 text-sm text-[#AEB9B1]">{dictionary.countryPage.noHikes}</p>
           )}
         </SectionCard>
 
         <SectionCard>
           <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
-            Travel Specialists
+            {dictionary.countryPage.specialistsHeading}
           </h2>
           {country.specialists && country.specialists.length > 0 ? (
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {country.specialists.map((specialist) => (
-                <SpecialistCard key={specialist.id} specialist={specialist} />
+                <SpecialistCard key={specialist.id} specialist={specialist} locale={locale} />
               ))}
             </div>
           ) : (
             <p className="mt-3 text-sm text-[#AEB9B1]">
-              No specialists linked for this destination.
+              {dictionary.countryPage.noSpecialists}
             </p>
           )}
         </SectionCard>
 
         <SectionCard>
           <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
-            Best Combined With
+            {dictionary.countryPage.bestCombinedWithHeading}
           </h2>
           {country.bestCombinedWith && country.bestCombinedWith.length > 0 ? (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -126,24 +136,30 @@ export default async function CountryPage({ params }: CountryPageProps) {
             </div>
           ) : (
             <p className="mt-3 text-sm text-[#AEB9B1]">
-              Combination links will appear when curated.
+              {dictionary.countryPage.noCombinations}
             </p>
           )}
         </SectionCard>
 
         <SectionCard>
           <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
-            Safety Indicators
+            {dictionary.countryPage.safetyIndicatorsHeading}
           </h2>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <SafetyBadge label="Pregnancy" safe={country.pregnancySafe} />
-            <SafetyBadge label="Infant" safe={country.infantSafe} />
+            <SafetyBadge
+              label={dictionary.countryPage.pregnancyLabel}
+              safe={country.pregnancySafe}
+              locale={locale}
+            />
+            <SafetyBadge label={dictionary.countryPage.infantLabel} safe={country.infantSafe} locale={locale} />
           </div>
         </SectionCard>
 
         {!country.isState && country.regions && country.regions.length > 0 ? (
           <SectionCard>
-            <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">Regions</h2>
+            <h2 className="text-2xl font-semibold tracking-tighter text-[#F0F2F0]">
+              {dictionary.countryPage.regionsHeading}
+            </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {country.regions.map((region) => (
                 <Link
@@ -153,7 +169,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
                 >
                   <h3 className="font-semibold tracking-tighter text-[#F0F2F0]">{region.name}</h3>
                   <p className="mt-1 text-sm text-[#AEB9B1]">
-                    Explore regional itinerary details.
+                    {dictionary.countryPage.regionExploreDetails}
                   </p>
                 </Link>
               ))}
