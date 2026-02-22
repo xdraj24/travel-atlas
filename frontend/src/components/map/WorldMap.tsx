@@ -463,7 +463,8 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
       const localizedStyle = languageControl.setLanguage(map.getStyle(), mapLanguage);
 
       for (const layer of localizedStyle.layers) {
-        const textField = layer.layout?.["text-field"];
+        const layout = layer.layout as Record<string, unknown> | undefined;
+        const textField = layout?.["text-field"];
         if (typeof textField === "undefined" || !map.getLayer(layer.id)) {
           continue;
         }
