@@ -1,5 +1,6 @@
 'use strict';
 
+const { runI18nSetup } = require('./bootstrap/i18n-setup');
 const { runInitialContentSeed } = require('./seed/initial-content');
 
 module.exports = {
@@ -19,6 +20,12 @@ module.exports = {
    * run jobs, or perform some special logic.
    */
   async bootstrap({ strapi }) {
+    try {
+      await runI18nSetup(strapi);
+    } catch (error) {
+      strapi.log.error('[i18n] Failed during i18n bootstrap setup', error);
+    }
+
     try {
       await runInitialContentSeed(strapi);
     } catch (error) {
