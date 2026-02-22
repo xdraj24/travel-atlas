@@ -66,6 +66,7 @@ export function buildCountryStrapiFilters(
 ): Record<string, unknown> {
   const strapiFilters: Record<string, unknown> = {
     isState: { $eq: false },
+    enabled: { $eq: true },
   };
 
   if (filters.minHiking) {
