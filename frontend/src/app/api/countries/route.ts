@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { fetchCountries } from "@/lib/api";
 import { parseCountryFilters, type SearchParams } from "@/lib/filters";
+import { LOCALE_COOKIE_NAME, resolveLocale } from "@/lib/locale";
 
 export async function GET(request: NextRequest) {
   const params: SearchParams = {};
@@ -11,7 +12,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = parseCountryFilters(params);
-    const countries = await fetchCountries(filters);
+    const locale = resolveLocale(
+      request.nextUrl.searchParams.get("lang") ?? request.cookies.get(LOCALE_COOKIE_NAME)?.value,
+    );
+    const countries = await fetchCountries(filters, locale);
 
     return NextResponse.json(
       {

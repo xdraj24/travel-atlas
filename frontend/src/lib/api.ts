@@ -1,4 +1,5 @@
 import { buildCountryStrapiFilters, type CountryFilters } from "@/lib/filters";
+import { type AppLocale } from "@/lib/locale";
 
 type EntityId = number | string;
 
@@ -661,10 +662,12 @@ function extractSingleData(payload: StrapiEnvelope): unknown | null {
 
 export async function fetchCountries(
   filters?: CountryFilters,
+  locale?: AppLocale,
 ): Promise<CountrySummary[]> {
   const query: Record<string, unknown> = {
     filters: buildCountryStrapiFilters(filters ?? {}),
     sort: ["name:asc"],
+    locale,
     populate: {
       heroImage: true,
       wonders: {
@@ -686,9 +689,13 @@ export async function fetchCountries(
     .filter((entry): entry is CountrySummary => entry !== null);
 }
 
-export async function fetchCountryBySlug(slug: string): Promise<Country | null> {
+export async function fetchCountryBySlug(
+  slug: string,
+  locale?: AppLocale,
+): Promise<Country | null> {
   const query: Record<string, unknown> = {
     filters: { slug: { $eq: slug } },
+    locale,
     populate: {
       heroImage: true,
       parentCountry: {
@@ -729,9 +736,13 @@ export async function fetchCountryBySlug(slug: string): Promise<Country | null> 
   return parseCountry(extractSingleData(payload));
 }
 
-export async function fetchWonderBySlug(slug: string): Promise<Wonder | null> {
+export async function fetchWonderBySlug(
+  slug: string,
+  locale?: AppLocale,
+): Promise<Wonder | null> {
   const query: Record<string, unknown> = {
     filters: { slug: { $eq: slug } },
+    locale,
     populate: {
       heroImage: true,
       country: {
@@ -751,9 +762,11 @@ export async function fetchWonderBySlug(slug: string): Promise<Wonder | null> {
 
 export async function fetchSpecialists(params?: {
   type?: "local_advisor" | "community_leader";
+  locale?: AppLocale;
 }): Promise<SpecialistSummary[]> {
   const query: Record<string, unknown> = {
     sort: ["rating:desc", "name:asc"],
+    locale: params?.locale,
     populate: {
       profileImage: true,
       country: true,
@@ -775,9 +788,11 @@ export async function fetchSpecialists(params?: {
 
 export async function fetchSpecialistBySlug(
   slug: string,
+  locale?: AppLocale,
 ): Promise<Specialist | null> {
   const query: Record<string, unknown> = {
     filters: { slug: { $eq: slug } },
+    locale,
     populate: {
       profileImage: true,
       country: {
@@ -799,9 +814,11 @@ export async function fetchSpecialistBySlug(
 
 export async function fetchCountryCombinationBySlug(
   slug: string,
+  locale?: AppLocale,
 ): Promise<CountryCombination | null> {
   const query: Record<string, unknown> = {
     filters: { slug: { $eq: slug } },
+    locale,
     populate: {
       countries: {
         populate: {

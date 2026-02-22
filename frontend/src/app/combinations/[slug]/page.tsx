@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { SectionCard } from "@/components/ui/SectionCard";
 import { fetchCountryCombinationBySlug, stripRichText } from "@/lib/api";
+import { getRequestLocale } from "@/lib/locale.server";
 
 interface CombinationPageProps {
   params: Promise<{
@@ -12,7 +13,8 @@ interface CombinationPageProps {
 
 export default async function CombinationPage({ params }: CombinationPageProps) {
   const { slug } = await params;
-  const combination = await fetchCountryCombinationBySlug(slug);
+  const locale = await getRequestLocale();
+  const combination = await fetchCountryCombinationBySlug(slug, locale);
   if (!combination) notFound();
 
   return (

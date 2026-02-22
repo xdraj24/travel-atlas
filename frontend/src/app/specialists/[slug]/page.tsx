@@ -7,6 +7,7 @@ import {
   formatCurrency,
   stripRichText,
 } from "@/lib/api";
+import { getRequestLocale } from "@/lib/locale.server";
 
 interface SpecialistDetailPageProps {
   params: Promise<{
@@ -18,7 +19,8 @@ export default async function SpecialistDetailPage({
   params,
 }: SpecialistDetailPageProps) {
   const { slug } = await params;
-  const specialist = await fetchSpecialistBySlug(slug);
+  const locale = await getRequestLocale();
+  const specialist = await fetchSpecialistBySlug(slug, locale);
   if (!specialist) notFound();
   const requestJoinHref = specialist.whatsappLink ?? specialist.instagramLink ?? "/specialists";
   const openRequestExternally = requestJoinHref.startsWith("http");
