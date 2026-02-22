@@ -78,17 +78,47 @@ function getCountrySeed() {
   });
 }
 
-async function clearDatabaseData(knex, db) {
-  const schema = await db.dialect.schemaInspector.getSchema();
-  const tableNames = schema.tables
-    .map((table) => table.name)
-    .filter((tableName) => !isProtectedTable(tableName));
-
-  if (tableNames.length === 0) {
-    return;
+function normalizeRawRows(rawResult) {
+  if (Array.isArray(rawResult)) {
+    if (Array.isArray(rawResult[0])) return rawResult[0];
+    return rawResult;
   }
 
-  const client = String(db?.config?.connection?.client || '').toLowerCase();
+  if (Array.isArray(rawResult?.rows)) {
+    return rawResult.rows;
+  }
+
+  return [];
+}
+
+async function listTableNames(knex, client) {
+  if (client.includes('postgres')) {
+    const rawResult = await knex.raw(
+      "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()",
+    );
+    return normalizeRawRows(rawResult).map((row) => row.tablename);
+  }
+
+  if (client.includes('mysql')) {
+    const rawResult = await knex.raw('SHOW TABLES');
+    return normalizeRawRows(rawResult).map((row) => Object.values(row)[0]);
+  }
+
+  if (client.includes('sqlite')) {
+    const rawResult = await knex.raw(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    );
+    return normalizeRawRows(rawResult).map((row) => row.name);
+  }
+
+  return [];
+}
+
+async function clearDatabaseData(knex, client) {
+  const tableNames = (await listTableNames(knex, client)).filter(
+    (tableName) => !isProtectedTable(tableName),
+  );
+  if (tableNames.length === 0) return;
 
   if (client.includes('postgres')) {
     const quotedTables = tableNames
@@ -233,9 +263,10 @@ async function seedCountries(knex, now) {
 
 module.exports = {
   async up(knex, db) {
+    const client = String(db?.config?.connection?.client || '').toLowerCase();
     const now = new Date();
 
-    await clearDatabaseData(knex, db);
+    await clearDatabaseData(knex, client);
     await ensureEnabledColumn(knex);
     await seedLocales(knex, now);
     await setDefaultLocale(knex);
