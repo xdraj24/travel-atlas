@@ -90,7 +90,8 @@ In Railway:
 2. Keep root directory at repo root (default).
 3. Add a PostgreSQL service or external Postgres and set backend env vars:
    - `DATABASE_CLIENT=postgres`
-   - `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
+   - `DATABASE_URL` (recommended, for Railway references use `${{Postgres.DATABASE_URL}}`)
+   - If `DATABASE_URL` is not set, define `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
    - `HOST=0.0.0.0`
    - `PORT` is injected by Railway (do not hardcode it)
    - `PUBLIC_URL=https://<your-railway-domain>`
