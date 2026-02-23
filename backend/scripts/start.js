@@ -25,9 +25,35 @@ function prepareRuntimeEnv() {
     console.warn('[bootstrap] DB_CLIENT not set, defaulting to "pg"');
   }
 
-  if (!process.env.DB_CONNECTION_STRING && process.env.DATABASE_URL) {
-    process.env.DB_CONNECTION_STRING = process.env.DATABASE_URL;
-    console.info('[bootstrap] Using DATABASE_URL as DB_CONNECTION_STRING');
+  if (!process.env.DB_CONNECTION_STRING) {
+    const connectionString =
+      process.env.DATABASE_URL ||
+      process.env.DATABASE_PRIVATE_URL ||
+      process.env.POSTGRES_URL ||
+      process.env.POSTGRES_PRIVATE_URL ||
+      null;
+
+    if (connectionString) {
+      process.env.DB_CONNECTION_STRING = connectionString;
+      console.info('[bootstrap] Using platform-provided Postgres URL as DB_CONNECTION_STRING');
+    }
+  }
+
+  const dbFieldFallbacks = [
+    ['DB_HOST', ['PGHOST', 'POSTGRES_HOST', 'DATABASE_HOST']],
+    ['DB_PORT', ['PGPORT', 'POSTGRES_PORT', 'DATABASE_PORT']],
+    ['DB_USER', ['PGUSER', 'POSTGRES_USER', 'DATABASE_USERNAME']],
+    ['DB_PASSWORD', ['PGPASSWORD', 'POSTGRES_PASSWORD', 'DATABASE_PASSWORD']],
+    ['DB_DATABASE', ['PGDATABASE', 'POSTGRES_DB', 'DATABASE_NAME']],
+  ];
+
+  for (const [target, aliases] of dbFieldFallbacks) {
+    if (process.env[target]) continue;
+
+    const fallback = aliases.find((key) => process.env[key]);
+    if (fallback) {
+      process.env[target] = process.env[fallback];
+    }
   }
 }
 
