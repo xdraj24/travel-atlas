@@ -27,6 +27,7 @@ Production env should define:
 ## Health endpoint
 
 - `GET /api/health`
+- `GET /server/health` (Directus built-in readiness endpoint, preferred for platform probes)
 
 ## Data model notes
 

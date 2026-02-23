@@ -34,7 +34,7 @@ services:
     ports:
       - "8055:8055"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8055/api/health > /dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8055/server/health > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10

@@ -10,7 +10,7 @@
     ]
   },
   "deploy": {
-    "healthcheckPath": "/api/health",
+    "healthcheckPath": "/server/health",
     "restartPolicyType": "ON_FAILURE"
   }
 }
