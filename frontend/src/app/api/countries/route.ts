@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
   try {
     const filters = parseCountryFilters(params);
     const locale = resolveLocale(
-      request.nextUrl.searchParams.get("lang") ?? request.cookies.get(LOCALE_COOKIE_NAME)?.value,
+      request.nextUrl.searchParams.get("locale") ??
+        request.nextUrl.searchParams.get("lang") ??
+        request.cookies.get(LOCALE_COOKIE_NAME)?.value,
     );
     const countries = await fetchCountries(filters, locale);
 
