@@ -1,7 +1,8 @@
 "use client";
 
 import type { Feature, FeatureCollection, Geometry } from "geojson";
-import type { ExpressionSpecification } from "mapbox-gl";
+import type { DataDrivenPropertyValueSpecification } from "mapbox-gl";
+import MapboxLanguage from "@mapbox/mapbox-gl-language";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MapboxMap, {
@@ -77,6 +78,8 @@ const COUNTRY_DEFAULT_FILL = "#354038";
 const COUNTRY_ACTIVE_FILL = "#D99E6B";
 const COUNTRY_SELECTED_FILL = "#E8BC8F";
 const COUNTRY_HOVER_FILL = "#E3B280";
+const supportedLanguages = ["en", "cs"] as const;
+const fallbackLanguage = "cs";
 
 const worldFillLayer: LayerProps = {
   id: WORLD_FILL_LAYER_ID,
@@ -216,18 +219,6 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function textFieldContainsNameToken(value: unknown): boolean {
-  if (typeof value === "string") {
-    return /\{name(?:_[^}]*)?\}/i.test(value);
-  }
-
-  if (Array.isArray(value)) {
-    return JSON.stringify(value).includes("name");
-  }
-
-  return false;
-}
-
 function resolveCountryFromProperties(
   properties: Record<string, unknown>,
   countriesByIso: Map<string, CountrySummary>,
@@ -255,6 +246,8 @@ function resolveCountryFromProperties(
 
 export function WorldMap({ countries, initialView = "map", locale }: WorldMapProps) {
   const dictionary = getDictionary(locale);
+  const mapLanguage =
+    supportedLanguages.includes(locale) ? locale : fallbackLanguage;
   const enabledCountries = useMemo(
     () => countries.filter((country) => country.enabled === true),
     [countries],
@@ -267,6 +260,7 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
   const [isMapReady, setIsMapReady] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">(initialView);
   const mapRef = useRef<MapRef | null>(null);
+  const languageControlRef = useRef<MapboxLanguage | null>(null);
   const highlightedFeatureIdsRef = useRef<Set<FeatureId>>(new Set());
   const lastTouchInteractionAtRef = useRef(0);
 
@@ -431,58 +425,60 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
-    if (!map || !isMapReady) {
+    if (!map || !isMapReady || languageControlRef.current) {
       return;
     }
 
-    const preferredNameField = locale === "cs" ? "name_cs" : "name_en";
-    const fallbackNameField = locale === "cs" ? "name_en" : "name";
-    const localizedNameExpression = [
-      "coalesce",
-      ["get", preferredNameField],
-      ["get", fallbackNameField],
-      ["get", "name"],
-    ] as unknown as ExpressionSpecification;
+    const languageControl = new MapboxLanguage({
+      defaultLanguage: fallbackLanguage,
+      supportedLanguages: [...supportedLanguages],
+    });
 
-    const applyLocalizedMapLabels = () => {
-      const layers = map.getStyle()?.layers ?? [];
-
-      for (const layer of layers) {
-        if (layer.type !== "symbol" || !map.getLayer(layer.id)) {
-          continue;
-        }
-
-        const textField = map.getLayoutProperty(layer.id, "text-field");
-        if (typeof textField === "undefined" || textField === null) {
-          continue;
-        }
-        if (!textFieldContainsNameToken(textField)) {
-          continue;
-        }
-
-        try {
-          if (typeof textField === "string") {
-            const localizedTemplate = textField.replace(
-              /\{name(?:_[^}]*)?\}/gi,
-              `{${preferredNameField}}`,
-            );
-            map.setLayoutProperty(layer.id, "text-field", localizedTemplate);
-          } else {
-            map.setLayoutProperty(layer.id, "text-field", localizedNameExpression);
-          }
-        } catch {
-          // Ignore style layers that reject runtime text-field localization overrides.
-        }
-      }
-    };
-
-    applyLocalizedMapLabels();
-    map.on("styledata", applyLocalizedMapLabels);
+    map.addControl(languageControl);
+    languageControlRef.current = languageControl;
 
     return () => {
-      map.off("styledata", applyLocalizedMapLabels);
+      if (languageControlRef.current !== languageControl) {
+        return;
+      }
+
+      try {
+        if (map.hasControl(languageControl)) {
+          map.removeControl(languageControl);
+        }
+      } catch {
+        // Ignore teardown errors when map is already disposed.
+      }
+      languageControlRef.current = null;
     };
-  }, [isMapReady, locale]);
+  }, [isMapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    const languageControl = languageControlRef.current;
+    if (!map || !isMapReady || !languageControl) {
+      return;
+    }
+
+    try {
+      const localizedStyle = languageControl.setLanguage(map.getStyle(), mapLanguage);
+
+      for (const layer of localizedStyle.layers) {
+        const layout = layer.layout as Record<string, unknown> | undefined;
+        const textField = layout?.["text-field"];
+        if (typeof textField === "undefined" || textField === null || !map.getLayer(layer.id)) {
+          continue;
+        }
+        map.setLayoutProperty(
+          layer.id,
+          "text-field",
+          textField as DataDrivenPropertyValueSpecification<string>,
+        );
+      }
+    } catch (error) {
+      console.error("Unable to update map label language", error);
+    }
+  }, [isMapReady, mapLanguage]);
 
   useEffect(() => {
     const currentMap = mapRef.current;
