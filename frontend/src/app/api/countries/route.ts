@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to load countries from Strapi.",
+            : "Failed to load countries from backend API.",
       },
       { status: 500 },
     );

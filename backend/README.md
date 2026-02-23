@@ -1,11 +1,11 @@
-# Backend (Strapi)
+# Backend (Directus)
 
 ## Commands
 
 ```bash
-npm run develop   # local dev mode
-npm run build     # build admin panel
-npm run start     # production mode
+npm run dev             # start Directus
+npm run db:reset-seed   # truncate domain tables and seed initial data
+npm run start           # start Directus (same as dev)
 ```
 
 ## Environment
@@ -18,26 +18,31 @@ Use:
 Production env should define:
 
 - `PUBLIC_URL` (public backend URL)
-- `CORS_ORIGIN` (comma-separated frontend origins, e.g. Vercel domain)
-- strong secrets (`APP_KEYS`, `JWT_SECRET`, etc.)
-- `DATABASE_URL` (recommended for Railway and managed Postgres)
-- or Postgres split variables (`DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`)
+- `KEY`, `SECRET` (Directus crypto secrets)
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD` (initial admin bootstrap)
+- `CORS_ORIGIN` (frontend origins, e.g. Vercel domain)
+- `DB_CONNECTION_STRING` (recommended for Railway Postgres)
+- or split Postgres variables (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`)
 
 ## Health endpoint
 
 - `GET /api/health`
 
-## Localization strategy (Czech base)
+## Data model notes
 
-- Content localization is handled with **Strapi i18n locales**, not duplicated DB columns like
-  `name_cs` / `name_en`.
-- Default locale is configured as `cs` and enabled locales are `cs` and `en`.
-- Seed data is upserted in both locales:
-  - Czech (`cs`) is the base language.
-  - English (`en`) is created/updated as a linked localization.
+- The previous CMS runtime is fully retired.
+- Domain tables use explicit SQL foreign keys for 1:n relationships.
+- Content includes both `*_en` and `*_cs` fields.
+- API locale selection is done via `?locale=cs|en`.
 
-### Reseed steps
+### Seed/reset flow
 
-1. Start/restart Strapi (`npm run develop` or `npm run start`).
-2. Bootstrap seeding runs automatically and upserts localized content.
-3. If you need a clean reseed, reset database content first, then restart Strapi..
+1. Ensure Postgres is available.
+2. Run `npm run db:reset-seed`.
+3. Start backend with `npm run start`.
+
+If you want to reseed on every startup (not recommended for production), set:
+
+```bash
+RESET_AND_SEED_ON_BOOT=true
+```
