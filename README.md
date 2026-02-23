@@ -76,6 +76,28 @@ This uses:
 - Strapi `npm run start`
 - persistent Postgres volume
 
+### Deploy backend to Railway (backend only)
+
+This repo includes `railway.json` configured for **backend-only** deployment.
+
+- builder: `DOCKERFILE`
+- Dockerfile path: `Dockerfile.backend` (root-level, copies only `backend/`)
+- health check: `GET /api/health`
+
+In Railway:
+
+1. Create/import a service from this repository.
+2. Keep root directory at repo root (default).
+3. Add a PostgreSQL service or external Postgres and set backend env vars:
+   - `DATABASE_CLIENT=postgres`
+   - `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
+   - `HOST=0.0.0.0`
+   - `PORT` is injected by Railway (do not hardcode it)
+   - `PUBLIC_URL=https://<your-railway-domain>`
+   - `CORS_ORIGIN=https://<your-vercel-domain>`
+   - `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`
+4. Deploy. Railway should now create a Docker build plan from `Dockerfile.backend` without scanning frontend files.
+
 ---
 
 ## Deploy frontend to Vercel
