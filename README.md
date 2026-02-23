@@ -92,7 +92,7 @@ In Railway:
    - `DATABASE_CLIENT=postgres`
    - `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
    - `HOST=0.0.0.0`
-   - `PORT=${{PORT}}`
+   - `PORT` is injected by Railway (do not hardcode it)
    - `PUBLIC_URL=https://<your-railway-domain>`
    - `CORS_ORIGIN=https://<your-vercel-domain>`
    - `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`
