@@ -61,48 +61,6 @@ export function parseCountryFilters(searchParams: SearchParams): CountryFilters 
   };
 }
 
-export function buildCountryStrapiFilters(
-  filters: CountryFilters,
-): Record<string, unknown> {
-  const strapiFilters: Record<string, unknown> = {
-    isState: { $eq: false },
-    enabled: { $eq: true },
-  };
-
-  if (filters.minHiking) {
-    strapiFilters.hikingLevel = { $gte: filters.minHiking };
-  }
-  if (filters.minBeach) {
-    strapiFilters.beachLevel = { $gte: filters.minBeach };
-  }
-  if (filters.minRoadtrip) {
-    strapiFilters.roadtripLevel = { $gte: filters.minRoadtrip };
-  }
-  if (typeof filters.pregnancySafe === "boolean") {
-    strapiFilters.pregnancySafe = { $eq: filters.pregnancySafe };
-  }
-  if (typeof filters.infantSafe === "boolean") {
-    strapiFilters.infantSafe = { $eq: filters.infantSafe };
-  }
-  if (filters.maxFlight) {
-    strapiFilters.avgCheapFlightPrice = { $lte: filters.maxFlight };
-  }
-  if (filters.maxAccommodation) {
-    strapiFilters.avgAccommodationPrice = { $lte: filters.maxAccommodation };
-  }
-  if (filters.maxFoodPerDay) {
-    strapiFilters.avgFoodPricePerDay = { $lte: filters.maxFoodPerDay };
-  }
-  if (filters.maxBudget) {
-    strapiFilters.$and = [
-      { avgCheapFlightPrice: { $lte: filters.maxBudget } },
-      { avgAccommodationPrice: { $lte: filters.maxBudget } },
-    ];
-  }
-
-  return strapiFilters;
-}
-
 export function filtersToQueryString(filters: CountryFilters): string {
   const query = new URLSearchParams();
   if (filters.minHiking) query.set("minHiking", String(filters.minHiking));

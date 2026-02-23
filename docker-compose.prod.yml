@@ -3,18 +3,18 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-strapi}
-      POSTGRES_USER: ${POSTGRES_USER:-strapi}
+      POSTGRES_DB: ${POSTGRES_DB:-directus}
+      POSTGRES_USER: ${POSTGRES_USER:-directus}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in root .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-strapi} -d ${POSTGRES_DB:-strapi}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-directus} -d ${POSTGRES_DB:-directus}"]
       interval: 10s
       timeout: 5s
       retries: 10
 
-  strapi:
+  directus:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -26,15 +26,15 @@ services:
     env_file:
       - ./backend/.env.production
     environment:
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${POSTGRES_DB:-strapi}
-      DATABASE_USERNAME: ${POSTGRES_USER:-strapi}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in root .env}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-directus}
+      DB_USER: ${POSTGRES_USER:-directus}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in root .env}
     ports:
-      - "1337:1337"
+      - "8055:8055"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:1337/api/health > /dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8055/api/health > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10

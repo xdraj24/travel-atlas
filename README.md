@@ -1,13 +1,13 @@
-# Production-ready Next.js + Strapi + Postgres
+# Production-ready Next.js + Directus + Postgres
 
 This repository contains:
 
 - **Frontend:** Next.js in `frontend/` (deploy to **Vercel**)
-- **Backend:** Strapi in `backend/` (deploy as a Docker container)
+- **Backend:** Directus (with custom API extension) in `backend/`
 - **Database:** PostgreSQL
 
 > Important: **Vercel should host the Next.js frontend only.**
-> Strapi is a long-running Node.js server and should be deployed to a container host (Railway, Render, Fly.io, DigitalOcean, ECS, etc.).
+> Directus is a long-running Node.js server and should be deployed to a container host (Railway, Render, Fly.io, DigitalOcean, ECS, etc.).
 
 ---
 
@@ -16,7 +16,7 @@ This repository contains:
 ```text
 .
 ├── frontend/                # Next.js app
-├── backend/                 # Strapi app
+├── backend/                 # Directus app + custom endpoint extension
 ├── docker-compose.yml       # Local development stack (hot reload)
 ├── docker-compose.prod.yml  # Production-like stack
 └── .env.example             # Root env for production compose
@@ -26,15 +26,15 @@ This repository contains:
 
 ## Local development
 
-### 1) Start backend + database
+### 1) Start Directus + database
 
 ```bash
 docker compose up --build
 ```
 
-- Strapi: `http://localhost:1337`
+- Directus: `http://localhost:8055`
 - Postgres: `localhost:5432`
-- Health check: `GET http://localhost:1337/api/health`
+- Health check: `GET http://localhost:8055/api/health`
 
 ### 2) Start frontend
 
@@ -60,7 +60,7 @@ cp backend/.env.production.example backend/.env.production
 Update these values before deploying:
 
 - `POSTGRES_PASSWORD` in root `.env`
-- all Strapi secrets in `backend/.env.production` (`APP_KEYS`, `JWT_SECRET`, etc.)
+- all Directus secrets in `backend/.env.production` (`KEY`, `SECRET`, `ADMIN_*`)
 - `PUBLIC_URL` in `backend/.env.production` (your backend URL)
 - `CORS_ORIGIN` in `backend/.env.production` (your Vercel frontend URL)
 
@@ -73,7 +73,7 @@ docker compose -f docker-compose.prod.yml up --build -d
 This uses:
 
 - multi-stage production build (`backend/Dockerfile`, `target: production`)
-- Strapi `npm run start`
+- Directus `npm run start`
 - persistent Postgres volume
 
 ### Deploy backend to Railway (backend only)
@@ -89,14 +89,15 @@ In Railway:
 1. Create/import a service from this repository.
 2. Keep root directory at repo root (default).
 3. Add a PostgreSQL service or external Postgres and set backend env vars:
-   - `DATABASE_CLIENT=postgres`
-   - `DATABASE_URL` (recommended, for Railway references use `${{Postgres.DATABASE_URL}}`)
-   - If `DATABASE_URL` is not set, define `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`
+   - `DB_CLIENT=pg`
+   - `DB_CONNECTION_STRING` (recommended, for Railway references use `${{Postgres.DATABASE_URL}}`)
+   - If `DB_CONNECTION_STRING` is not set, define `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`
    - `HOST=0.0.0.0`
    - `PORT` is injected by Railway (do not hardcode it)
    - `PUBLIC_URL=https://<your-railway-domain>`
    - `CORS_ORIGIN=https://<your-vercel-domain>`
-   - `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`
+   - `KEY`, `SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+   - optional one-time seed toggle: `RESET_AND_SEED_ON_BOOT=true`
 4. Deploy. Railway should now create a Docker build plan from `Dockerfile.backend` without scanning frontend files.
 
 ---
@@ -108,8 +109,8 @@ In Railway:
 1. Import repository into Vercel.
 2. Set **Root Directory** to `frontend`.
 3. Set environment variables:
-   - `NEXT_PUBLIC_STRAPI_URL=https://your-backend-domain`
-   - `NEXT_PUBLIC_STRAPI_KEY=your-strapi-api-token`
+   - `DIRECTUS_URL=https://your-backend-domain`
+   - `NEXT_PUBLIC_DIRECTUS_URL=https://your-backend-domain`
 4. Deploy.
 
 ### Option B: Vercel CLI
@@ -125,6 +126,6 @@ npx vercel --prod --cwd frontend
 
 - [ ] Backend is reachable at `https://your-backend-domain/api/health`
 - [ ] `CORS_ORIGIN` includes your Vercel domain
-- [ ] Frontend env vars in Vercel include Strapi URL + API key
-- [ ] Strapi secrets are rotated from template values
+- [ ] Frontend env vars in Vercel include Directus URL
+- [ ] Directus secrets are rotated from template values
 - [ ] Postgres data is persisted and backed up
