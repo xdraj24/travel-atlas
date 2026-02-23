@@ -15,6 +15,7 @@ FROM node:22-alpine AS production
 WORKDIR /opt/app
 RUN apk add --no-cache libc6-compat
 ENV NODE_ENV=production \
+  DB_CLIENT=pg \
   STORAGE_LOCAL_ROOT=/tmp/uploads \
   EXTENSIONS_PATH=/tmp/extensions \
   CACHE_PATH=/tmp

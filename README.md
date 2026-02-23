@@ -82,7 +82,7 @@ This repo includes `railway.json` configured for **backend-only** deployment.
 
 - builder: `DOCKERFILE`
 - Dockerfile path: `Dockerfile.backend` (root-level, copies only `backend/`)
-- health check: `GET /api/health`
+- health check: `GET /server/health`
 
 In Railway:
 
@@ -124,7 +124,8 @@ npx vercel --prod --cwd frontend
 
 ## Production checklist
 
-- [ ] Backend is reachable at `https://your-backend-domain/api/health`
+- [ ] Backend readiness endpoint responds at `https://your-backend-domain/server/health`
+- [ ] Custom API health endpoint responds at `https://your-backend-domain/api/health`
 - [ ] `CORS_ORIGIN` includes your Vercel domain
 - [ ] Frontend env vars in Vercel include Directus URL
 - [ ] Directus secrets are rotated from template values
