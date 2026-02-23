@@ -79,7 +79,7 @@ const COUNTRY_ACTIVE_FILL = "#D99E6B";
 const COUNTRY_SELECTED_FILL = "#E8BC8F";
 const COUNTRY_HOVER_FILL = "#E3B280";
 const supportedLanguages = ["en", "cs"] as const;
-const fallbackLanguage = "en";
+const fallbackLanguage = "cs";
 
 const worldFillLayer: LayerProps = {
   id: WORLD_FILL_LAYER_ID,
