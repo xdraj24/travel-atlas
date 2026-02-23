@@ -24,6 +24,7 @@ COPY . .
 RUN mkdir -p /tmp/uploads
 RUN mkdir -p /tmp/extensions
 RUN if [ -d /opt/app/extensions ]; then cp -R /opt/app/extensions/. /tmp/extensions/; fi
+RUN printf '{\n  "type": "module"\n}\n' > /tmp/extensions/package.json
 RUN chown -R node:node /tmp
 RUN chown -R node:node /opt/app
 USER node
