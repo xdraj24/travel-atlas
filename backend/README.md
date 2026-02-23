@@ -40,4 +40,4 @@ Production env should define:
 
 1. Start/restart Strapi (`npm run develop` or `npm run start`).
 2. Bootstrap seeding runs automatically and upserts localized content.
-3. If you need a clean reseed, reset database content first, then restart Strapi.
+3. If you need a clean reseed, reset database content first, then restart Strapi..
