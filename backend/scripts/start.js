@@ -1,35 +1,34 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
 
-import { runResetAndSeed } from './reset-and-seed.js';
+function runCommand(command, args = []) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(command, args, {
+      stdio: 'inherit',
+      env: process.env,
+    });
 
-function isTrue(value) {
-  if (!value) return false;
-  const normalized = String(value).trim().toLowerCase();
-  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+    proc.on('exit', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${command} exited with code ${code}`));
+    });
+  });
 }
 
 async function main() {
-  if (isTrue(process.env.RESET_AND_SEED_ON_BOOT)) {
-    console.info('[bootstrap] RESET_AND_SEED_ON_BOOT=true -> resetting custom tables');
-    await runResetAndSeed();
+  try {
+    // Try bootstrap first (safe if DB already initialized)
+    console.info('[bootstrap] Running directus bootstrap...');
+    await runCommand('directus', ['bootstrap']);
+  } catch (err) {
+    console.warn('[bootstrap] Bootstrap skipped or already initialized');
   }
 
-  const directusProcess = spawn('directus', ['start'], {
-    stdio: 'inherit',
-    env: process.env,
-  });
-
-  directusProcess.on('exit', (code, signal) => {
-    if (signal) {
-      process.kill(process.pid, signal);
-      return;
-    }
-    process.exit(code ?? 0);
-  });
+  console.info('[bootstrap] Starting Directus...');
+  await runCommand('directus', ['start']);
 }
 
 main().catch((error) => {
-  console.error('[bootstrap] Failed to start Directus', error);
+  console.error('[bootstrap] Failed', error);
   process.exit(1);
 });
