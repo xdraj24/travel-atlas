@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
+import { runResetAndSeed } from './reset-and-seed.js';
 
 function runCommand(command, args = []) {
   return new Promise((resolve, reject) => {
@@ -57,8 +58,18 @@ function prepareRuntimeEnv() {
   }
 }
 
+function isTrue(value) {
+  if (!value) return false;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
 function shouldBootstrap() {
   return Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD);
+}
+
+function shouldResetAndSeed() {
+  return isTrue(process.env.RESET_AND_SEED_ON_BOOT);
 }
 
 async function main() {
@@ -76,6 +87,13 @@ async function main() {
     }
   } catch (err) {
     console.warn('[bootstrap] Bootstrap skipped or already initialized');
+  }
+
+  if (shouldResetAndSeed()) {
+    console.info('[bootstrap] RESET_AND_SEED_ON_BOOT=true -> resetting and seeding domain tables');
+    await runResetAndSeed();
+  } else {
+    console.info('[bootstrap] Skipping reset/seed (RESET_AND_SEED_ON_BOOT not enabled)');
   }
 
   console.info('[bootstrap] Starting Directus...');
