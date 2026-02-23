@@ -20,7 +20,8 @@ Production env should define:
 - `PUBLIC_URL` (public backend URL)
 - `CORS_ORIGIN` (comma-separated frontend origins, e.g. Vercel domain)
 - strong secrets (`APP_KEYS`, `JWT_SECRET`, etc.)
-- Postgres database variables
+- `DATABASE_URL` (recommended for Railway and managed Postgres)
+- or Postgres split variables (`DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`)
 
 ## Health endpoint
 
