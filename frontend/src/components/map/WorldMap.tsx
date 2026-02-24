@@ -319,7 +319,7 @@ function isCountryFeatureAvailable(
   statesByParentId: Map<string, CountrySummary[]>,
 ): boolean {
   if (!country) return false;
-  if (hasCountryContent(country)) return true;
+  if (country.enabled === true && hasCountryContent(country)) return true;
   return getStatesForCountry(country, statesByParentId).some((state) => hasCountryContent(state));
 }
 
@@ -328,13 +328,14 @@ function pickFeatureCountry(
   statesByParentId: Map<string, CountrySummary[]>,
 ): CountrySummary | undefined {
   if (!country) return undefined;
-  if (hasCountryContent(country)) return country;
+  if (country.enabled === true && hasCountryContent(country)) return country;
 
   const firstStateWithContent = getStatesForCountry(country, statesByParentId)
     .filter((state) => hasCountryContent(state))
     .sort((left, right) => left.name.localeCompare(right.name))[0];
 
-  return firstStateWithContent ?? country;
+  if (firstStateWithContent) return firstStateWithContent;
+  return country.enabled === true ? country : undefined;
 }
 
 export function WorldMap({ countries, initialView = "map", locale }: WorldMapProps) {
@@ -349,9 +350,9 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
     () => countries.filter((country) => country.enabled === true),
     [countries],
   );
-  const enabledTopLevelCountries = useMemo(
-    () => enabledCountries.filter((country) => country.isState !== true),
-    [enabledCountries],
+  const allTopLevelCountries = useMemo(
+    () => countries.filter((country) => country.isState !== true),
+    [countries],
   );
   const enabledStates = useMemo(
     () => enabledCountries.filter((country) => country.isState === true),
@@ -371,7 +372,7 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
 
   const countriesByName = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    enabledTopLevelCountries.forEach((country) => {
+    allTopLevelCountries.forEach((country) => {
       const aliases = [country.name, country.nameEn, country.nameCs];
       aliases.forEach((alias) => {
         if (typeof alias === "string" && alias.trim().length > 0) {
@@ -380,17 +381,17 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
       });
     });
     return map;
-  }, [enabledTopLevelCountries]);
+  }, [allTopLevelCountries]);
 
   const countriesByIso = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    enabledTopLevelCountries.forEach((country) => {
+    allTopLevelCountries.forEach((country) => {
       if (country.isoCode) {
         map.set(country.isoCode.toLowerCase(), country);
       }
     });
     return map;
-  }, [enabledTopLevelCountries]);
+  }, [allTopLevelCountries]);
 
   const statesByParentId = useMemo(() => {
     const map = new Map<string, CountrySummary[]>();

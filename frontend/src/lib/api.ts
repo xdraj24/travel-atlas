@@ -20,6 +20,7 @@ interface ApiFetchOptions {
 
 interface FetchCountriesOptions {
   includeStates?: boolean;
+  includeDisabled?: boolean;
 }
 
 export interface MediaAsset {
@@ -258,7 +259,9 @@ function toCountryQueryString(
   if (!options?.includeStates) {
     params.set("filter[is_state][_eq]", "false");
   }
-  params.set("filter[enabled][_eq]", "true");
+  if (!options?.includeDisabled) {
+    params.set("filter[enabled][_eq]", "true");
+  }
   if (filters?.minHiking) {
     params.set("filter[hiking_level][_gte]", String(filters.minHiking));
   }

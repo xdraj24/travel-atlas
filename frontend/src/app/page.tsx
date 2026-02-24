@@ -14,7 +14,10 @@ export default async function Home({ searchParams }: HomePageProps) {
   const initialView = params.view === "list" ? "list" : "map";
   const locale = await getRequestLocale();
   const dictionary = getDictionary(locale);
-  const countries = await fetchCountries(undefined, locale, { includeStates: true });
+  const countries = await fetchCountries(undefined, locale, {
+    includeStates: true,
+    includeDisabled: true,
+  });
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] pt-20 text-[var(--text-primary)]">
