@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node ./scripts/start.js",
     "start": "node ./scripts/start.js",
-    "db:reset-seed": "node ./scripts/reset-and-seed.js"
+    "db:reset-seed": "node ./scripts/reset-and-seed.js",
+    "seed:countries:api": "node ./scripts/seed-countries-api.js"
   },
   "dependencies": {
     "directus": "^11.0.0",
