@@ -1,4 +1,4 @@
-# Backend (Directus)
+# Backend (Directus).
 
 ## Commands
 

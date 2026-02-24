@@ -42,6 +42,7 @@ interface MapFeatureProperties extends Record<string, unknown> {
   __countrySlug?: string;
   __fillColor?: string;
   __isAvailable?: boolean;
+  __displayName?: string;
 }
 
 type WorldFeature = Feature<Geometry, MapFeatureProperties>;
@@ -72,6 +73,7 @@ const WORLD_FILL_LAYER_ID = "world-countries-fill";
 const WORLD_AVAILABLE_GLOW_LAYER_ID = "world-countries-available-glow";
 const WORLD_SELECTION_GLOW_LAYER_ID = "world-countries-selection-glow";
 const WORLD_STROKE_LAYER_ID = "world-countries-stroke";
+const WORLD_LABEL_LAYER_ID = "world-countries-labels";
 const mapboxStyle = process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? "mapbox://styles/mapbox/dark-v11";
 const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 const COUNTRY_DEFAULT_FILL = "#354038";
@@ -80,6 +82,10 @@ const COUNTRY_SELECTED_FILL = "#E8BC8F";
 const COUNTRY_HOVER_FILL = "#E3B280";
 const supportedLanguages = ["en", "cs"] as const;
 const fallbackLanguage = "cs";
+const mapLanguageToIntlLocale: Record<(typeof supportedLanguages)[number], string> = {
+  en: "en",
+  cs: "cs-CZ",
+};
 
 const worldFillLayer: LayerProps = {
   id: WORLD_FILL_LAYER_ID,
@@ -155,6 +161,26 @@ const worldStrokeLayer: LayerProps = {
   },
 };
 
+const worldLabelLayer: LayerProps = {
+  id: WORLD_LABEL_LAYER_ID,
+  type: "symbol",
+  minzoom: 1.1,
+  layout: {
+    "text-field": "{__displayName}",
+    "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Regular"],
+    "text-size": ["interpolate", ["linear"], ["zoom"], 1.1, 8, 3.2, 13],
+    "text-letter-spacing": 0.02,
+    "text-max-width": 8.5,
+    "text-allow-overlap": false,
+  },
+  paint: {
+    "text-color": "#D9E1DB",
+    "text-halo-color": "rgba(14, 18, 16, 0.82)",
+    "text-halo-width": 1,
+    "text-opacity": 0.82,
+  },
+};
+
 function normalizeCountryKey(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ");
 }
@@ -167,6 +193,43 @@ function getProperty(properties: Record<string, unknown>, keys: string[]): strin
     }
   }
   return "";
+}
+
+function normalizeIso2Code(value: string): string | undefined {
+  const normalized = value.trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(normalized) ? normalized : undefined;
+}
+
+function createRegionDisplayNames(locale: (typeof supportedLanguages)[number]): Intl.DisplayNames | null {
+  try {
+    return new Intl.DisplayNames([mapLanguageToIntlLocale[locale]], {
+      type: "region",
+    });
+  } catch {
+    return null;
+  }
+}
+
+function resolveFeatureDisplayName(
+  properties: Record<string, unknown>,
+  country: CountrySummary | undefined,
+  regionDisplayNames: Intl.DisplayNames | null,
+): string {
+  if (country?.name) {
+    return country.name;
+  }
+
+  const iso2Code = normalizeIso2Code(
+    getProperty(properties, ["ISO3166-1-Alpha-2", "iso_a2", "ISO_A2"]),
+  );
+  if (iso2Code && regionDisplayNames) {
+    const localizedName = regionDisplayNames.of(iso2Code);
+    if (typeof localizedName === "string" && localizedName.trim().length > 0) {
+      return localizedName;
+    }
+  }
+
+  return getProperty(properties, ["name", "NAME", "admin", "ADMIN"]);
 }
 
 function formatScore(value?: number): string {
@@ -278,6 +341,10 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
   const dictionary = getDictionary(locale);
   const mapLanguage =
     supportedLanguages.includes(locale) ? locale : fallbackLanguage;
+  const regionDisplayNames = useMemo(
+    () => createRegionDisplayNames(mapLanguage),
+    [mapLanguage],
+  );
   const enabledCountries = useMemo(
     () => countries.filter((country) => country.enabled === true),
     [countries],
@@ -436,11 +503,16 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
             __countrySlug: selectionCountry?.slug ?? matchedCountry?.slug,
             __isAvailable: isAvailable,
             __fillColor: getFeatureFill(isAvailable),
+            __displayName: resolveFeatureDisplayName(
+              properties,
+              matchedCountry,
+              regionDisplayNames,
+            ),
           },
         } as WorldFeature;
       }),
     };
-  }, [rawWorldGeoJson, countriesByIso, countriesByName, statesByParentId]);
+  }, [rawWorldGeoJson, countriesByIso, countriesByName, statesByParentId, regionDisplayNames]);
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
@@ -513,6 +585,29 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
       }
       languageControlRef.current = null;
     };
+  }, [isMapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !isMapReady) {
+      return;
+    }
+
+    for (const layer of map.getStyle().layers ?? []) {
+      if (layer.type !== "symbol" || !layer.id.includes("country-label")) {
+        continue;
+      }
+
+      if (!map.getLayer(layer.id)) {
+        continue;
+      }
+
+      try {
+        map.setLayoutProperty(layer.id, "visibility", "none");
+      } catch {
+        // Ignore style mutations while map internals settle.
+      }
+    }
   }, [isMapReady]);
 
   useEffect(() => {
@@ -726,6 +821,7 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
                     <Layer {...worldAvailabilityGlowLayer} />
                     <Layer {...worldSelectionGlowLayer} />
                     <Layer {...worldStrokeLayer} />
+                    <Layer {...worldLabelLayer} />
                   </Source>
                 ) : null}
               </MapboxMap>
