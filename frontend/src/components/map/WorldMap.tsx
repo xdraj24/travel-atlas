@@ -257,9 +257,8 @@ function hasCountryContent(country: CountrySummary | undefined): boolean {
   return hasDescription || hasImage || hasWonders || hasExperienceScores || hasPlanningData;
 }
 
-function getCountryFill(country: CountrySummary | undefined): string {
-  if (!country) return COUNTRY_DEFAULT_FILL;
-  return hasCountryContent(country) ? COUNTRY_ACTIVE_FILL : COUNTRY_DEFAULT_FILL;
+function getFeatureFill(isAvailable: boolean): string {
+  return isAvailable ? COUNTRY_ACTIVE_FILL : COUNTRY_DEFAULT_FILL;
 }
 
 function getCountryRegionLabel(
@@ -307,6 +306,37 @@ function resolveCountryFromProperties(
   return undefined;
 }
 
+function getStatesForCountry(
+  country: CountrySummary | undefined,
+  statesByParentId: Map<string, CountrySummary[]>,
+): CountrySummary[] {
+  if (!country) return [];
+  return statesByParentId.get(String(country.id)) ?? [];
+}
+
+function isCountryFeatureAvailable(
+  country: CountrySummary | undefined,
+  statesByParentId: Map<string, CountrySummary[]>,
+): boolean {
+  if (!country) return false;
+  if (hasCountryContent(country)) return true;
+  return getStatesForCountry(country, statesByParentId).some((state) => hasCountryContent(state));
+}
+
+function pickFeatureCountry(
+  country: CountrySummary | undefined,
+  statesByParentId: Map<string, CountrySummary[]>,
+): CountrySummary | undefined {
+  if (!country) return undefined;
+  if (hasCountryContent(country)) return country;
+
+  const firstStateWithContent = getStatesForCountry(country, statesByParentId)
+    .filter((state) => hasCountryContent(state))
+    .sort((left, right) => left.name.localeCompare(right.name))[0];
+
+  return firstStateWithContent ?? country;
+}
+
 export function WorldMap({ countries, initialView = "map", locale }: WorldMapProps) {
   const dictionary = getDictionary(locale);
   const mapLanguage =
@@ -318,6 +348,14 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
   const enabledCountries = useMemo(
     () => countries.filter((country) => country.enabled === true),
     [countries],
+  );
+  const enabledTopLevelCountries = useMemo(
+    () => enabledCountries.filter((country) => country.isState !== true),
+    [enabledCountries],
+  );
+  const enabledStates = useMemo(
+    () => enabledCountries.filter((country) => country.isState === true),
+    [enabledCountries],
   );
   const [selectedCountry, setSelectedCountry] = useState<CountrySummary | null>(null);
   const [tooltip, setTooltip] = useState<HoverTooltipState | null>(null);
@@ -333,21 +371,43 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
 
   const countriesByName = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    enabledCountries.forEach((country) => {
-      map.set(normalizeCountryKey(country.name), country);
+    enabledTopLevelCountries.forEach((country) => {
+      const aliases = [country.name, country.nameEn, country.nameCs];
+      aliases.forEach((alias) => {
+        if (typeof alias === "string" && alias.trim().length > 0) {
+          map.set(normalizeCountryKey(alias), country);
+        }
+      });
     });
     return map;
-  }, [enabledCountries]);
+  }, [enabledTopLevelCountries]);
 
   const countriesByIso = useMemo(() => {
     const map = new Map<string, CountrySummary>();
-    enabledCountries.forEach((country) => {
+    enabledTopLevelCountries.forEach((country) => {
       if (country.isoCode) {
         map.set(country.isoCode.toLowerCase(), country);
       }
     });
     return map;
-  }, [enabledCountries]);
+  }, [enabledTopLevelCountries]);
+
+  const statesByParentId = useMemo(() => {
+    const map = new Map<string, CountrySummary[]>();
+    enabledStates.forEach((state) => {
+      if (typeof state.parentCountryId === "undefined" || state.parentCountryId === null) {
+        return;
+      }
+      const key = String(state.parentCountryId);
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(state);
+      } else {
+        map.set(key, [state]);
+      }
+    });
+    return map;
+  }, [enabledStates]);
 
   const countriesBySlug = useMemo(() => {
     const map = new Map<string, CountrySummary>();
@@ -432,21 +492,27 @@ export function WorldMap({ countries, initialView = "map", locale }: WorldMapPro
       type: "FeatureCollection",
       features: rawWorldGeoJson.features.map((feature) => {
         const properties = asRecord(feature.properties) as MapFeatureProperties;
-        const country = resolveCountryFromProperties(properties, countriesByIso, countriesByName);
+        const matchedCountry = resolveCountryFromProperties(properties, countriesByIso, countriesByName);
+        const selectionCountry = pickFeatureCountry(matchedCountry, statesByParentId);
+        const isAvailable = isCountryFeatureAvailable(matchedCountry, statesByParentId);
 
         return {
           ...feature,
           properties: {
             ...properties,
-            __countrySlug: country?.slug,
-            __isAvailable: hasCountryContent(country),
-            __fillColor: getCountryFill(country),
-            __displayName: resolveFeatureDisplayName(properties, country, regionDisplayNames),
+            __countrySlug: selectionCountry?.slug ?? matchedCountry?.slug,
+            __isAvailable: isAvailable,
+            __fillColor: getFeatureFill(isAvailable),
+            __displayName: resolveFeatureDisplayName(
+              properties,
+              matchedCountry,
+              regionDisplayNames,
+            ),
           },
         } as WorldFeature;
       }),
     };
-  }, [rawWorldGeoJson, countriesByIso, countriesByName, regionDisplayNames]);
+  }, [rawWorldGeoJson, countriesByIso, countriesByName, statesByParentId, regionDisplayNames]);
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
