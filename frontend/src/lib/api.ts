@@ -312,6 +312,36 @@ function asBoolean(value: unknown): boolean | undefined {
   return undefined;
 }
 
+function asStringArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    const values = value
+      .map((entry) => asString(entry))
+      .filter((entry): entry is string => typeof entry === "string");
+    return values.length > 0 ? values : undefined;
+  }
+
+  const text = asString(value);
+  if (!text) return undefined;
+  const values = text
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  return values.length > 0 ? values : undefined;
+}
+
+function asEntityId(value: unknown): EntityId | undefined {
+  if (typeof value === "number" || typeof value === "string") {
+    return value;
+  }
+  if (isRecord(value)) {
+    const nested = pick(value, ["id"]);
+    if (typeof nested === "number" || typeof nested === "string") {
+      return nested;
+    }
+  }
+  return undefined;
+}
+
 function pick(item: UnknownRecord, keys: string[]): unknown {
   for (const key of keys) {
     if (key in item && typeof item[key] !== "undefined") {
@@ -359,6 +389,17 @@ function mapHeroImage(item: UnknownRecord): MediaAsset | null {
   return {
     url,
     alternativeText: asString(pick(item, ["hero_image_alt", "heroImageAlt"])) ?? null,
+  };
+}
+
+function mapProfileImage(item: UnknownRecord): MediaAsset | null {
+  const url =
+    asString(pick(item, ["profile_image_url", "profileImageUrl"])) ??
+    toAssetUrl(pick(item, ["profile_image", "profileImage"]));
+  if (!url) return null;
+  return {
+    url,
+    alternativeText: asString(pick(item, ["profile_image_alt", "profileImageAlt"])) ?? null,
   };
 }
 
@@ -436,6 +477,85 @@ function mapCountry(item: UnknownRecord, locale: AppLocale): CountrySummary | nu
   };
 }
 
+function mapHike(item: UnknownRecord, locale: AppLocale): HikeSummary | null {
+  const id = pick(item, ["id"]);
+  if (typeof id !== "number" && typeof id !== "string") {
+    return null;
+  }
+
+  const name = localizedText(item, locale, "name");
+  if (!name) return null;
+
+  return {
+    id,
+    name,
+    difficulty: asNumber(pick(item, ["difficulty"])),
+    elevationGain: asNumber(pick(item, ["elevation_gain", "elevationGain"])),
+    distanceKm: asNumber(pick(item, ["distance_km", "distanceKm"])),
+    durationHours: asNumber(pick(item, ["duration_hours", "durationHours"])),
+    bestSeason: localizedText(item, locale, "best_season"),
+    description: localizedText(item, locale, "description") ?? null,
+  };
+}
+
+function mapAttraction(item: UnknownRecord, locale: AppLocale): AttractionSummary | null {
+  const id = pick(item, ["id"]);
+  if (typeof id !== "number" && typeof id !== "string") {
+    return null;
+  }
+
+  const name = localizedText(item, locale, "name");
+  if (!name) return null;
+
+  const rawType = asString(pick(item, ["type"]));
+  const type =
+    rawType === "beach" || rawType === "viewpoint" || rawType === "town" || rawType === "waterfall"
+      ? rawType
+      : undefined;
+
+  return {
+    id,
+    name,
+    type,
+    description: localizedText(item, locale, "description") ?? null,
+  };
+}
+
+function mapSpecialist(item: UnknownRecord, locale: AppLocale): SpecialistSummary | null {
+  const id = pick(item, ["id"]);
+  if (typeof id !== "number" && typeof id !== "string") {
+    return null;
+  }
+
+  const name = localizedText(item, locale, "name");
+  const slug = asString(pick(item, ["slug"]));
+  const rawType = asString(pick(item, ["type"]));
+  if (!name || !slug || (rawType !== "local_advisor" && rawType !== "community_leader")) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    slug,
+    type: rawType,
+    rating: asNumber(pick(item, ["rating"])),
+    languages:
+      asStringArray(
+        pick(item, [
+          locale === "cs" ? "languages_cs" : "languages_en",
+          locale === "cs" ? "languagesCs" : "languagesEn",
+        ]),
+      ) ?? [],
+    offersChat: asBoolean(pick(item, ["offers_chat", "offersChat"])),
+    offersTrips: asBoolean(pick(item, ["offers_trips", "offersTrips"])),
+    tripPriceFrom: asNumber(pick(item, ["trip_price_from", "tripPriceFrom"])),
+    whatsappLink: asString(pick(item, ["whatsapp_link", "whatsappLink"])) ?? null,
+    instagramLink: asString(pick(item, ["instagram_link", "instagramLink"])) ?? null,
+    profileImage: mapProfileImage(item),
+  };
+}
+
 function mapCountriesFromEnvelope(
   payload: ApiEnvelope<unknown>,
   locale: AppLocale,
@@ -452,6 +572,233 @@ function mapCountriesFromEnvelope(
 
 function toRequestLocale(locale?: AppLocale): AppLocale {
   return locale === "cs" ? "cs" : "en";
+}
+
+function localizedSortColumn(locale: AppLocale, field: string): string {
+  return locale === "cs" ? `${field}_cs` : `${field}_en`;
+}
+
+function withQuery(endpoint: string, searchParams: URLSearchParams): string {
+  const query = searchParams.toString();
+  return query.length > 0 ? `${endpoint}?${query}` : endpoint;
+}
+
+async function fetchItems(collection: string, searchParams: URLSearchParams): Promise<UnknownRecord[]> {
+  const payload = await apiFetch<ApiEnvelope<unknown>>(withQuery(`/items/${collection}`, searchParams));
+  if (!Array.isArray(payload.data)) return [];
+
+  const rows: UnknownRecord[] = [];
+  for (const item of payload.data) {
+    if (isRecord(item)) rows.push(item);
+  }
+  return rows;
+}
+
+function rankById(orderedIds: EntityId[]): Map<string, number> {
+  const rank = new Map<string, number>();
+  orderedIds.forEach((id, index) => {
+    const key = String(id);
+    if (!rank.has(key)) {
+      rank.set(key, index);
+    }
+  });
+  return rank;
+}
+
+async function fetchCountryBySlugFromItems(
+  slug: string,
+  locale: AppLocale,
+): Promise<Country | null> {
+  const countryParams = new URLSearchParams();
+  countryParams.set("filter[slug][_eq]", slug);
+  countryParams.set("filter[enabled][_eq]", "true");
+  countryParams.set("limit", "1");
+
+  const [countryRow] = await fetchItems("countries", countryParams);
+  if (!countryRow) return null;
+
+  const mappedCountry = mapCountry(countryRow, locale);
+  const countryId = asEntityId(pick(countryRow, ["id"]));
+  if (!mappedCountry || typeof countryId === "undefined") return null;
+
+  const parentCountryId = asEntityId(pick(countryRow, ["parent_country_id", "parentCountryId"]));
+
+  const parentCountryPromise = (() => {
+    if (typeof parentCountryId === "undefined") {
+      return Promise.resolve<UnknownRecord[]>([]);
+    }
+    const params = new URLSearchParams();
+    params.set("filter[id][_eq]", String(parentCountryId));
+    params.set("filter[enabled][_eq]", "true");
+    params.set("limit", "1");
+    return fetchItems("countries", params);
+  })();
+
+  const regionsParams = new URLSearchParams();
+  regionsParams.set("filter[parent_country_id][_eq]", String(countryId));
+  regionsParams.set("filter[enabled][_eq]", "true");
+  regionsParams.set("sort", localizedSortColumn(locale, "name"));
+  regionsParams.set("limit", "-1");
+
+  const wondersParams = new URLSearchParams();
+  wondersParams.set("filter[country_id][_eq]", String(countryId));
+  wondersParams.set("sort", localizedSortColumn(locale, "name"));
+  wondersParams.set("limit", "-1");
+
+  const hikesParams = new URLSearchParams();
+  hikesParams.set("filter[country_id][_eq]", String(countryId));
+  hikesParams.set("sort", localizedSortColumn(locale, "name"));
+  hikesParams.set("limit", "-1");
+
+  const attractionsParams = new URLSearchParams();
+  attractionsParams.set("filter[country_id][_eq]", String(countryId));
+  attractionsParams.set("sort", localizedSortColumn(locale, "name"));
+  attractionsParams.set("limit", "-1");
+
+  const featuredCountriesParams = new URLSearchParams();
+  featuredCountriesParams.set("filter[country_id][_eq]", String(countryId));
+  featuredCountriesParams.set("sort", "sort_order");
+  featuredCountriesParams.set("limit", "-1");
+
+  const bestCombinationsParams = new URLSearchParams();
+  bestCombinationsParams.set("filter[country_id][_eq]", String(countryId));
+  bestCombinationsParams.set("sort", "sort_order");
+  bestCombinationsParams.set("limit", "-1");
+
+  const [
+    parentCountryRows,
+    regionRows,
+    wonderRows,
+    hikeRows,
+    attractionRows,
+    featuredCountryRows,
+    bestCombinationRows,
+  ] = await Promise.all([
+    parentCountryPromise,
+    fetchItems("countries", regionsParams),
+    fetchItems("wonders", wondersParams),
+    fetchItems("hikes", hikesParams),
+    fetchItems("attractions", attractionsParams),
+    fetchItems("specialist_featured_countries", featuredCountriesParams),
+    fetchItems("country_best_combinations", bestCombinationsParams),
+  ]);
+
+  const specialistIds: EntityId[] = [];
+  for (const row of featuredCountryRows) {
+    const specialistId = asEntityId(pick(row, ["specialist_id", "specialistId"]));
+    if (typeof specialistId !== "undefined") {
+      specialistIds.push(specialistId);
+    }
+  }
+
+  const relatedCountryIds: EntityId[] = [];
+  for (const row of bestCombinationRows) {
+    const relatedCountryId = asEntityId(pick(row, ["related_country_id", "relatedCountryId"]));
+    if (typeof relatedCountryId !== "undefined") {
+      relatedCountryIds.push(relatedCountryId);
+    }
+  }
+
+  const specialistsPromise = (() => {
+    if (specialistIds.length === 0) {
+      return Promise.resolve<UnknownRecord[]>([]);
+    }
+    const params = new URLSearchParams();
+    params.set("filter[id][_in]", specialistIds.map((id) => String(id)).join(","));
+    params.set("filter[enabled][_eq]", "true");
+    params.set("limit", "-1");
+    return fetchItems("specialists", params);
+  })();
+
+  const relatedCountriesPromise = (() => {
+    if (relatedCountryIds.length === 0) {
+      return Promise.resolve<UnknownRecord[]>([]);
+    }
+    const params = new URLSearchParams();
+    params.set("filter[id][_in]", relatedCountryIds.map((id) => String(id)).join(","));
+    params.set("filter[enabled][_eq]", "true");
+    params.set("limit", "-1");
+    return fetchItems("countries", params);
+  })();
+
+  const [specialistRows, relatedCountryRows] = await Promise.all([
+    specialistsPromise,
+    relatedCountriesPromise,
+  ]);
+
+  const parentCountry = parentCountryRows.length > 0 ? mapCountry(parentCountryRows[0], locale) : null;
+
+  const regions: CountrySummary[] = [];
+  for (const row of regionRows) {
+    const mapped = mapCountry(row, locale);
+    if (mapped) regions.push(mapped);
+  }
+
+  const wonders: WonderSummary[] = [];
+  for (const row of wonderRows) {
+    const mapped = mapWonder(row, locale);
+    if (mapped) wonders.push(mapped);
+  }
+
+  const hikes: HikeSummary[] = [];
+  for (const row of hikeRows) {
+    const mapped = mapHike(row, locale);
+    if (mapped) hikes.push(mapped);
+  }
+
+  const attractions: AttractionSummary[] = [];
+  for (const row of attractionRows) {
+    const mapped = mapAttraction(row, locale);
+    if (mapped) attractions.push(mapped);
+  }
+
+  const specialistRank = rankById(specialistIds);
+  const specialists: SpecialistSummary[] = [];
+  for (const row of specialistRows) {
+    const mapped = mapSpecialist(row, locale);
+    if (mapped) specialists.push(mapped);
+  }
+  specialists.sort((left, right) => {
+    const leftRank = specialistRank.get(String(left.id)) ?? Number.MAX_SAFE_INTEGER;
+    const rightRank = specialistRank.get(String(right.id)) ?? Number.MAX_SAFE_INTEGER;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+
+    const leftRating = left.rating ?? Number.NEGATIVE_INFINITY;
+    const rightRating = right.rating ?? Number.NEGATIVE_INFINITY;
+    if (leftRating !== rightRating) return rightRating - leftRating;
+
+    return left.name.localeCompare(right.name);
+  });
+
+  const relatedCountryRank = rankById(relatedCountryIds);
+  const bestCombinedWith: CountrySummary[] = [];
+  for (const row of relatedCountryRows) {
+    const mapped = mapCountry(row, locale);
+    if (mapped) bestCombinedWith.push(mapped);
+  }
+  bestCombinedWith.sort((left, right) => {
+    const leftRank = relatedCountryRank.get(String(left.id)) ?? Number.MAX_SAFE_INTEGER;
+    const rightRank = relatedCountryRank.get(String(right.id)) ?? Number.MAX_SAFE_INTEGER;
+    return leftRank - rightRank;
+  });
+
+  return {
+    ...mappedCountry,
+    avgDirectFlightPrice: asNumber(
+      pick(countryRow, ["avg_direct_flight_price", "avgDirectFlightPrice"]),
+    ),
+    avgCheapFlightPrice: asNumber(
+      pick(countryRow, ["avg_cheap_flight_price", "avgCheapFlightPrice"]),
+    ),
+    geoJson: pick(countryRow, ["geo_json", "geoJson"]),
+    parentCountry,
+    regions,
+    bestCombinedWith,
+    wonders,
+    hikes,
+    attractions,
+    specialists,
+  };
 }
 
 function toCountriesEndpoint(filters?: CountryFilters): string {
@@ -494,10 +841,19 @@ export async function fetchCountryBySlug(
   slug: string,
   locale?: AppLocale,
 ): Promise<Country | null> {
-  const payload = await apiFetch<ApiEnvelope<Country>>(
-    `/api/countries/${encodeURIComponent(slug)}${withLocale(locale)}`,
-  );
-  return payload.data ?? null;
+  const requestLocale = toRequestLocale(locale);
+  try {
+    const payload = await apiFetch<ApiEnvelope<Country>>(
+      `/api/countries/${encodeURIComponent(slug)}${withLocale(locale)}`,
+    );
+    return payload.data ?? null;
+  } catch (error) {
+    const apiError = error as ApiRequestError;
+    if (apiError.status === 404) {
+      return fetchCountryBySlugFromItems(slug, requestLocale);
+    }
+    throw error;
+  }
 }
 
 export async function fetchWonderBySlug(
