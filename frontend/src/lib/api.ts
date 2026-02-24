@@ -556,6 +556,35 @@ function mapSpecialist(item: UnknownRecord, locale: AppLocale): SpecialistSummar
   };
 }
 
+function mapTrip(
+  item: UnknownRecord,
+  locale: AppLocale,
+  startDates: string[] = [],
+): TripSummary | null {
+  const id = pick(item, ["id"]);
+  if (typeof id !== "number" && typeof id !== "string") {
+    return null;
+  }
+
+  const title = localizedText(item, locale, "title");
+  const slug = asString(pick(item, ["slug"]));
+  if (!title || !slug) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    slug,
+    durationDays: asNumber(pick(item, ["duration_days", "durationDays"])),
+    price: asNumber(pick(item, ["price"])),
+    difficulty: asNumber(pick(item, ["difficulty"])),
+    maxGroupSize: asNumber(pick(item, ["max_group_size", "maxGroupSize"])),
+    description: localizedText(item, locale, "description") ?? null,
+    startDates: [...startDates].sort((left, right) => left.localeCompare(right)),
+  };
+}
+
 function mapCountriesFromEnvelope(
   payload: ApiEnvelope<unknown>,
   locale: AppLocale,
@@ -872,6 +901,124 @@ async function fetchWonderBySlugFromItems(
   };
 }
 
+async function fetchSpecialistsFromItems(params?: {
+  type?: "local_advisor" | "community_leader";
+  locale?: AppLocale;
+}): Promise<SpecialistSummary[]> {
+  const locale = toRequestLocale(params?.locale);
+  const specialistsParams = new URLSearchParams();
+  specialistsParams.set("filter[enabled][_eq]", "true");
+  specialistsParams.set("limit", "-1");
+  if (params?.type) {
+    specialistsParams.set("filter[type][_eq]", params.type);
+  }
+
+  const specialistRows = await fetchItems("specialists", specialistsParams);
+
+  const specialists: SpecialistSummary[] = [];
+  for (const row of specialistRows) {
+    const mapped = mapSpecialist(row, locale);
+    if (mapped) specialists.push(mapped);
+  }
+
+  specialists.sort((left, right) => {
+    const leftRating = left.rating ?? Number.NEGATIVE_INFINITY;
+    const rightRating = right.rating ?? Number.NEGATIVE_INFINITY;
+    if (leftRating !== rightRating) return rightRating - leftRating;
+    return left.name.localeCompare(right.name);
+  });
+
+  return specialists;
+}
+
+async function fetchSpecialistBySlugFromItems(
+  slug: string,
+  locale: AppLocale,
+): Promise<Specialist | null> {
+  const specialistParams = new URLSearchParams();
+  specialistParams.set("filter[slug][_eq]", slug);
+  specialistParams.set("filter[enabled][_eq]", "true");
+  specialistParams.set("limit", "1");
+
+  const [specialistRow] = await fetchItems("specialists", specialistParams);
+  if (!specialistRow) return null;
+
+  const mappedSpecialist = mapSpecialist(specialistRow, locale);
+  const specialistId = asEntityId(pick(specialistRow, ["id"]));
+  if (!mappedSpecialist || typeof specialistId === "undefined") return null;
+
+  const countryId = asEntityId(pick(specialistRow, ["country_id", "countryId"]));
+  const countryPromise = (() => {
+    if (typeof countryId === "undefined") {
+      return Promise.resolve<UnknownRecord[]>([]);
+    }
+    const params = new URLSearchParams();
+    params.set("filter[id][_eq]", String(countryId));
+    params.set("filter[enabled][_eq]", "true");
+    params.set("limit", "1");
+    return fetchItems("countries", params);
+  })();
+
+  const tripsParams = new URLSearchParams();
+  tripsParams.set("filter[specialist_id][_eq]", String(specialistId));
+  tripsParams.set("sort", localizedSortColumn(locale, "title"));
+  tripsParams.set("limit", "-1");
+
+  const tripRows = await fetchItems("trips", tripsParams);
+  const tripIds: EntityId[] = [];
+  for (const row of tripRows) {
+    const tripId = asEntityId(pick(row, ["id"]));
+    if (typeof tripId !== "undefined") tripIds.push(tripId);
+  }
+
+  const startDatesPromise = (() => {
+    if (tripIds.length === 0) {
+      return Promise.resolve<UnknownRecord[]>([]);
+    }
+    const params = new URLSearchParams();
+    params.set("filter[trip_id][_in]", tripIds.map((id) => String(id)).join(","));
+    params.set("sort", "start_date");
+    params.set("limit", "-1");
+    return fetchItems("trip_start_dates", params);
+  })();
+
+  const [countryRows, startDateRows] = await Promise.all([countryPromise, startDatesPromise]);
+  const country = countryRows.length > 0 ? mapCountry(countryRows[0], locale) : null;
+
+  const startDatesByTrip = new Map<string, string[]>();
+  for (const row of startDateRows) {
+    const tripId = asEntityId(pick(row, ["trip_id", "tripId"]));
+    const startDate = asString(pick(row, ["start_date", "startDate"]));
+    if (typeof tripId === "undefined" || !startDate) continue;
+
+    const key = String(tripId);
+    const current = startDatesByTrip.get(key);
+    if (current) {
+      current.push(startDate);
+    } else {
+      startDatesByTrip.set(key, [startDate]);
+    }
+  }
+
+  const trips: TripSummary[] = [];
+  for (const row of tripRows) {
+    const tripId = asEntityId(pick(row, ["id"]));
+    const mapped = mapTrip(
+      row,
+      locale,
+      typeof tripId === "undefined" ? [] : (startDatesByTrip.get(String(tripId)) ?? []),
+    );
+    if (mapped) trips.push(mapped);
+  }
+
+  return {
+    ...mappedSpecialist,
+    bio: localizedText(specialistRow, locale, "bio") ?? null,
+    country,
+    trips,
+  };
+}
+
 function toCountriesEndpoint(filters?: CountryFilters): string {
   const query = toCountryQueryString(filters);
   return `/items/countries${query}`;
@@ -950,24 +1097,45 @@ export async function fetchSpecialists(params?: {
   type?: "local_advisor" | "community_leader";
   locale?: AppLocale;
 }): Promise<SpecialistSummary[]> {
+  const requestLocale = toRequestLocale(params?.locale);
   const search = new URLSearchParams();
   if (params?.locale) search.set("locale", params.locale);
   if (params?.type) search.set("type", params.type);
   const query = search.toString();
-  const payload = await apiFetch<ApiEnvelope<SpecialistSummary[]>>(
-    `/api/specialists${query ? `?${query}` : ""}`,
-  );
-  return Array.isArray(payload.data) ? payload.data : [];
+  try {
+    const payload = await apiFetch<ApiEnvelope<SpecialistSummary[]>>(
+      `/api/specialists${query ? `?${query}` : ""}`,
+    );
+    return Array.isArray(payload.data) ? payload.data : [];
+  } catch (error) {
+    const apiError = error as ApiRequestError;
+    if (apiError.status === 404) {
+      return fetchSpecialistsFromItems({
+        type: params?.type,
+        locale: requestLocale,
+      });
+    }
+    throw error;
+  }
 }
 
 export async function fetchSpecialistBySlug(
   slug: string,
   locale?: AppLocale,
 ): Promise<Specialist | null> {
-  const payload = await apiFetch<ApiEnvelope<Specialist>>(
-    `/api/specialists/${encodeURIComponent(slug)}${withLocale(locale)}`,
-  );
-  return payload.data ?? null;
+  const requestLocale = toRequestLocale(locale);
+  try {
+    const payload = await apiFetch<ApiEnvelope<Specialist>>(
+      `/api/specialists/${encodeURIComponent(slug)}${withLocale(locale)}`,
+    );
+    return payload.data ?? null;
+  } catch (error) {
+    const apiError = error as ApiRequestError;
+    if (apiError.status === 404) {
+      return fetchSpecialistBySlugFromItems(slug, requestLocale);
+    }
+    throw error;
+  }
 }
 
 export async function fetchCountryCombinationBySlug(
