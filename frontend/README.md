@@ -10,6 +10,7 @@ npm run dev
 Required env vars:
 
 - `DIRECTUS_URL` (server-side URL to Directus, preferred)
+- `DIRECTUS_ACCESS_TOKEN` (server-side token sent as `Authorization: Bearer <token>`)
 - `NEXT_PUBLIC_DIRECTUS_URL` (public Directus URL; if both are set, server requests use `DIRECTUS_URL`)
 - `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` (Mapbox public access token)
 - `NEXT_PUBLIC_MAPBOX_STYLE` (optional Mapbox style URL, defaults to `mapbox://styles/mapbox/dark-v11`)

@@ -110,6 +110,7 @@ In Railway:
 2. Set **Root Directory** to `frontend`.
 3. Set environment variables:
    - `DIRECTUS_URL=https://your-backend-domain`
+   - `DIRECTUS_ACCESS_TOKEN=your-directus-access-token`
    - `NEXT_PUBLIC_DIRECTUS_URL=https://your-backend-domain`
 4. Deploy.
 

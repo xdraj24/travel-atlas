@@ -2,9 +2,16 @@ import { type CountryFilters } from "@/lib/filters";
 import { type AppLocale } from "@/lib/locale";
 
 type EntityId = number | string;
+type UnknownRecord = Record<string, unknown>;
 
 interface ApiEnvelope<T> {
   data?: T;
+}
+
+interface ApiRequestError extends Error {
+  status?: number;
+  endpoint?: string;
+  responseBody?: string;
 }
 
 interface ApiFetchOptions {
@@ -135,8 +142,9 @@ export interface CountryCombination {
 }
 
 export const EXAMPLE_FETCH_QUERIES = {
-  homepageCountries: "/api/countries?locale=cs",
-  filteredCountries: "/api/countries?locale=en&minHiking=3&pregnancySafe=true&maxFlight=500",
+  homepageCountries: "/items/countries?filter[locale][_eq]=cs",
+  filteredCountries:
+    "/items/countries?filter[locale][_eq]=en&filter[hiking_level][_gte]=3&filter[pregnancy_safe][_eq]=true&filter[avg_cheap_flight_price][_lte]=500",
   countryBySlug: "/api/countries/italy?locale=en",
   wonderBySlug: "/api/wonders/tre-cime-di-lavaredo?locale=en",
 } as const;
@@ -186,7 +194,12 @@ function getBaseUrl(): string {
 }
 
 function getToken(): string | undefined {
-  return process.env.DIRECTUS_TOKEN ?? process.env.NEXT_PUBLIC_DIRECTUS_TOKEN;
+  return (
+    process.env.DIRECTUS_ACCESS_TOKEN ??
+    process.env.DIRECTUS_TOKEN ??
+    process.env.NEXT_PUBLIC_DIRECTUS_ACCESS_TOKEN ??
+    process.env.NEXT_PUBLIC_DIRECTUS_TOKEN
+  );
 }
 
 async function apiFetch<T>(
@@ -214,7 +227,13 @@ async function apiFetch<T>(
   const response = await fetch(`${getBaseUrl()}${endpoint}`, requestOptions);
 
   if (!response.ok) {
-    throw new Error(`Directus request failed: ${response.status} ${endpoint}`);
+    const bodyText = await response.text();
+    const message = `Directus request failed: ${response.status} ${endpoint}${bodyText ? ` - ${bodyText}` : ""}`;
+    const error = new Error(message) as ApiRequestError;
+    error.status = response.status;
+    error.endpoint = endpoint;
+    error.responseBody = bodyText;
+    throw error;
   }
 
   return (await response.json()) as T;
@@ -224,28 +243,245 @@ function withLocale(locale?: AppLocale): string {
   return locale ? `?locale=${locale}` : "";
 }
 
-function toCountryQueryString(filters?: CountryFilters, locale?: AppLocale): string {
+function toCountryQueryString(
+  filters?: CountryFilters,
+  locale?: AppLocale,
+  options?: {
+    includeLocaleFilter?: boolean;
+  },
+): string {
   const params = new URLSearchParams();
-  if (locale) params.set("locale", locale);
-  if (filters?.minHiking) params.set("minHiking", String(filters.minHiking));
-  if (filters?.minBeach) params.set("minBeach", String(filters.minBeach));
-  if (filters?.minRoadtrip) params.set("minRoadtrip", String(filters.minRoadtrip));
+  params.set("filter[is_state][_eq]", "false");
+  params.set("filter[enabled][_eq]", "true");
+
+  if (locale && options?.includeLocaleFilter !== false) {
+    params.set("filter[locale][_eq]", locale);
+  }
+  if (filters?.minHiking) {
+    params.set("filter[hiking_level][_gte]", String(filters.minHiking));
+  }
+  if (filters?.minBeach) {
+    params.set("filter[beach_level][_gte]", String(filters.minBeach));
+  }
+  if (filters?.minRoadtrip) {
+    params.set("filter[roadtrip_level][_gte]", String(filters.minRoadtrip));
+  }
   if (typeof filters?.pregnancySafe === "boolean") {
-    params.set("pregnancySafe", String(filters.pregnancySafe));
+    params.set("filter[pregnancy_safe][_eq]", String(filters.pregnancySafe));
   }
   if (typeof filters?.infantSafe === "boolean") {
-    params.set("infantSafe", String(filters.infantSafe));
+    params.set("filter[infant_safe][_eq]", String(filters.infantSafe));
   }
-  if (filters?.maxFlight) params.set("maxFlight", String(filters.maxFlight));
+  if (filters?.maxFlight) {
+    params.set("filter[avg_cheap_flight_price][_lte]", String(filters.maxFlight));
+  }
   if (filters?.maxAccommodation) {
-    params.set("maxAccommodation", String(filters.maxAccommodation));
+    params.set("filter[avg_accommodation_price][_lte]", String(filters.maxAccommodation));
   }
   if (filters?.maxFoodPerDay) {
-    params.set("maxFoodPerDay", String(filters.maxFoodPerDay));
+    params.set("filter[avg_food_price_per_day][_lte]", String(filters.maxFoodPerDay));
   }
-  if (filters?.maxBudget) params.set("maxBudget", String(filters.maxBudget));
+  if (filters?.maxBudget) {
+    params.set("filter[avg_cheap_flight_price][_lte]", String(filters.maxBudget));
+    params.set("filter[avg_accommodation_price][_lte]", String(filters.maxBudget));
+  }
+  params.set("limit", "-1");
+
   const encoded = params.toString();
   return encoded.length > 0 ? `?${encoded}` : "";
+}
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function asString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes"].includes(normalized)) return true;
+    if (["false", "0", "no"].includes(normalized)) return false;
+  }
+  return undefined;
+}
+
+function pick(item: UnknownRecord, keys: string[]): unknown {
+  for (const key of keys) {
+    if (key in item && typeof item[key] !== "undefined") {
+      return item[key];
+    }
+  }
+  return undefined;
+}
+
+function localizedText(item: UnknownRecord, locale: AppLocale, field: string): string | undefined {
+  const base = asString(item[field]);
+  if (base) return base;
+
+  const preferred = asString(item[`${field}_${locale}`]);
+  if (preferred) return preferred;
+
+  const fallback = locale === "cs" ? asString(item[`${field}_en`]) : asString(item[`${field}_cs`]);
+  return fallback;
+}
+
+function toAssetUrl(value: unknown): string | undefined {
+  if (isRecord(value)) {
+    const directUrl = asString(pick(value, ["url"]));
+    if (directUrl) {
+      return /^https?:\/\//i.test(directUrl) ? directUrl : `${getBaseUrl()}${directUrl}`;
+    }
+    const fileId = asString(pick(value, ["id"]));
+    if (fileId) {
+      return `${getBaseUrl()}/assets/${encodeURIComponent(fileId)}`;
+    }
+  }
+
+  const raw = asString(value);
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("/")) return `${getBaseUrl()}${raw}`;
+  return `${getBaseUrl()}/assets/${encodeURIComponent(raw)}`;
+}
+
+function mapHeroImage(item: UnknownRecord): MediaAsset | null {
+  const url =
+    asString(pick(item, ["hero_image_url", "heroImageUrl"])) ??
+    toAssetUrl(pick(item, ["hero_image", "heroImage"]));
+  if (!url) return null;
+  return {
+    url,
+    alternativeText: asString(pick(item, ["hero_image_alt", "heroImageAlt"])) ?? null,
+  };
+}
+
+function mapWonder(item: UnknownRecord, locale: AppLocale): WonderSummary | null {
+  const id = pick(item, ["id"]);
+  if (typeof id !== "number" && typeof id !== "string") {
+    return null;
+  }
+
+  const name = localizedText(item, locale, "name");
+  const slug = asString(pick(item, ["slug"]));
+  if (!name || !slug) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    slug,
+    shortDescription: localizedText(item, locale, "short_description") ?? null,
+    heroImage: mapHeroImage(item),
+    locationLat: asNumber(pick(item, ["location_lat", "locationLat"])),
+    locationLng: asNumber(pick(item, ["location_lng", "locationLng"])),
+    hikingDifficulty: asNumber(pick(item, ["hiking_difficulty", "hikingDifficulty"])),
+    altitudeMeters: asNumber(pick(item, ["altitude_meters", "altitudeMeters"])),
+    pregnancySafe: asBoolean(pick(item, ["pregnancy_safe", "pregnancySafe"])),
+    infantSafe: asBoolean(pick(item, ["infant_safe", "infantSafe"])),
+  };
+}
+
+function mapWonders(value: unknown, locale: AppLocale): WonderSummary[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const wonders: WonderSummary[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const mapped = mapWonder(entry, locale);
+    if (mapped) wonders.push(mapped);
+  }
+  return wonders;
+}
+
+function mapCountry(item: UnknownRecord, locale: AppLocale): CountrySummary | null {
+  const id = pick(item, ["id"]);
+  if (typeof id !== "number" && typeof id !== "string") {
+    return null;
+  }
+
+  const slug = asString(pick(item, ["slug"]));
+  const name = localizedText(item, locale, "name");
+  if (!slug || !name) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    slug,
+    isoCode: asString(pick(item, ["iso_code", "isoCode"])),
+    isState: asBoolean(pick(item, ["is_state", "isState"])) ?? false,
+    enabled: asBoolean(pick(item, ["enabled"])) ?? true,
+    description: localizedText(item, locale, "description") ?? null,
+    hikingLevel: asNumber(pick(item, ["hiking_level", "hikingLevel"])),
+    beachLevel: asNumber(pick(item, ["beach_level", "beachLevel"])),
+    roadtripLevel: asNumber(pick(item, ["roadtrip_level", "roadtripLevel"])),
+    minDays: asNumber(pick(item, ["min_days", "minDays"])),
+    optimalDays: asNumber(pick(item, ["optimal_days", "optimalDays"])),
+    avgAccommodationPrice: asNumber(
+      pick(item, ["avg_accommodation_price", "avgAccommodationPrice"]),
+    ),
+    avgFoodPricePerDay: asNumber(pick(item, ["avg_food_price_per_day", "avgFoodPricePerDay"])),
+    pregnancySafe: asBoolean(pick(item, ["pregnancy_safe", "pregnancySafe"])),
+    infantSafe: asBoolean(pick(item, ["infant_safe", "infantSafe"])),
+    heroImage: mapHeroImage(item),
+    wonders: mapWonders(pick(item, ["wonders"]), locale),
+  };
+}
+
+function mapCountriesFromEnvelope(
+  payload: ApiEnvelope<unknown>,
+  locale: AppLocale,
+): CountrySummary[] {
+  if (!Array.isArray(payload.data)) return [];
+  const countries: CountrySummary[] = [];
+  for (const item of payload.data) {
+    if (!isRecord(item)) continue;
+    const mapped = mapCountry(item, locale);
+    if (mapped) countries.push(mapped);
+  }
+  return countries.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function shouldRetryWithoutLocaleFilter(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  const status = typeof error.status === "number" ? error.status : undefined;
+  if (status !== 400) return false;
+
+  const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
+  const responseBody =
+    typeof error.responseBody === "string" ? error.responseBody.toLowerCase() : "";
+  return message.includes("locale") || responseBody.includes("locale");
+}
+
+function toRequestLocale(locale?: AppLocale): AppLocale {
+  return locale === "cs" ? "cs" : "en";
+}
+
+function toCountriesEndpoint(
+  filters?: CountryFilters,
+  locale?: AppLocale,
+  options?: {
+    includeLocaleFilter?: boolean;
+  },
+): string {
+  const query = toCountryQueryString(filters, locale, options);
+  return `/items/countries${query}`;
 }
 
 export function stripRichText(value?: string | null): string {
@@ -273,9 +509,23 @@ export async function fetchCountries(
   filters?: CountryFilters,
   locale?: AppLocale,
 ): Promise<CountrySummary[]> {
-  const query = toCountryQueryString(filters, locale);
-  const payload = await apiFetch<ApiEnvelope<CountrySummary[]>>(`/api/countries${query}`);
-  return Array.isArray(payload.data) ? payload.data : [];
+  const requestLocale = toRequestLocale(locale);
+  const endpoint = toCountriesEndpoint(filters, requestLocale, {
+    includeLocaleFilter: Boolean(locale),
+  });
+  try {
+    const payload = await apiFetch<ApiEnvelope<unknown>>(endpoint);
+    return mapCountriesFromEnvelope(payload, requestLocale);
+  } catch (error) {
+    if (locale && shouldRetryWithoutLocaleFilter(error)) {
+      const fallbackEndpoint = toCountriesEndpoint(filters, requestLocale, {
+        includeLocaleFilter: false,
+      });
+      const payload = await apiFetch<ApiEnvelope<unknown>>(fallbackEndpoint);
+      return mapCountriesFromEnvelope(payload, requestLocale);
+    }
+    throw error;
+  }
 }
 
 export async function fetchCountryBySlug(
