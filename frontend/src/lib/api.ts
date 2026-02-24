@@ -801,6 +801,77 @@ async function fetchCountryBySlugFromItems(
   };
 }
 
+async function fetchWonderBySlugFromItems(
+  slug: string,
+  locale: AppLocale,
+): Promise<Wonder | null> {
+  const wonderParams = new URLSearchParams();
+  wonderParams.set("filter[slug][_eq]", slug);
+  wonderParams.set("limit", "1");
+
+  const [wonderRow] = await fetchItems("wonders", wonderParams);
+  if (!wonderRow) return null;
+
+  const mappedWonder = mapWonder(wonderRow, locale);
+  const wonderId = asEntityId(pick(wonderRow, ["id"]));
+  if (!mappedWonder || typeof wonderId === "undefined") return null;
+
+  const countryId = asEntityId(pick(wonderRow, ["country_id", "countryId"]));
+
+  const countryPromise = (() => {
+    if (typeof countryId === "undefined") {
+      return Promise.resolve<UnknownRecord[]>([]);
+    }
+    const params = new URLSearchParams();
+    params.set("filter[id][_eq]", String(countryId));
+    params.set("filter[enabled][_eq]", "true");
+    params.set("limit", "1");
+    return fetchItems("countries", params);
+  })();
+
+  const hikesParams = new URLSearchParams();
+  hikesParams.set("filter[wonder_id][_eq]", String(wonderId));
+  hikesParams.set("sort", localizedSortColumn(locale, "name"));
+  hikesParams.set("limit", "-1");
+
+  const tagsParams = new URLSearchParams();
+  tagsParams.set("filter[wonder_id][_eq]", String(wonderId));
+  tagsParams.set("sort", "sort_order");
+  tagsParams.set("limit", "-1");
+
+  const [countryRows, hikeRows, tagRows] = await Promise.all([
+    countryPromise,
+    fetchItems("hikes", hikesParams),
+    fetchItems("wonder_tags", tagsParams),
+  ]);
+
+  const country: CountrySummary[] = [];
+  for (const row of countryRows) {
+    const mapped = mapCountry(row, locale);
+    if (mapped) country.push(mapped);
+  }
+
+  const hikes: HikeSummary[] = [];
+  for (const row of hikeRows) {
+    const mapped = mapHike(row, locale);
+    if (mapped) hikes.push(mapped);
+  }
+
+  const tags: string[] = [];
+  for (const row of tagRows) {
+    const label = localizedText(row, locale, "label");
+    if (label) tags.push(label);
+  }
+
+  return {
+    ...mappedWonder,
+    fullDescription: localizedText(wonderRow, locale, "full_description") ?? null,
+    tags,
+    country,
+    hikes,
+  };
+}
+
 function toCountriesEndpoint(filters?: CountryFilters): string {
   const query = toCountryQueryString(filters);
   return `/items/countries${query}`;
@@ -860,10 +931,19 @@ export async function fetchWonderBySlug(
   slug: string,
   locale?: AppLocale,
 ): Promise<Wonder | null> {
-  const payload = await apiFetch<ApiEnvelope<Wonder>>(
-    `/api/wonders/${encodeURIComponent(slug)}${withLocale(locale)}`,
-  );
-  return payload.data ?? null;
+  const requestLocale = toRequestLocale(locale);
+  try {
+    const payload = await apiFetch<ApiEnvelope<Wonder>>(
+      `/api/wonders/${encodeURIComponent(slug)}${withLocale(locale)}`,
+    );
+    return payload.data ?? null;
+  } catch (error) {
+    const apiError = error as ApiRequestError;
+    if (apiError.status === 404) {
+      return fetchWonderBySlugFromItems(slug, requestLocale);
+    }
+    throw error;
+  }
 }
 
 export async function fetchSpecialists(params?: {
