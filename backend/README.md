@@ -42,7 +42,7 @@ Production env should define:
 2. Run `npm run db:reset-seed`.
 3. Start backend with `npm run start`.
 
-If you want to reseed on every startup (not recommended for production), set:
+If you want to reseed on every startup (not recommended for production),  set:
 
 ```bash
 RESET_AND_SEED_ON_BOOT=true
