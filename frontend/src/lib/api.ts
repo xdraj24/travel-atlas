@@ -18,6 +18,10 @@ interface ApiFetchOptions {
   revalidate?: number;
 }
 
+interface FetchCountriesOptions {
+  includeStates?: boolean;
+}
+
 export interface MediaAsset {
   id?: EntityId;
   url: string;
@@ -27,10 +31,13 @@ export interface MediaAsset {
 export interface CountrySummary {
   id: EntityId;
   name: string;
+  nameEn?: string;
+  nameCs?: string;
   slug: string;
   isoCode?: string;
   isState?: boolean;
   enabled?: boolean;
+  parentCountryId?: EntityId | null;
   description?: string | null;
   hikingLevel?: number;
   beachLevel?: number;
@@ -245,9 +252,12 @@ function withLocale(locale?: AppLocale): string {
 
 function toCountryQueryString(
   filters?: CountryFilters,
+  options?: FetchCountriesOptions,
 ): string {
   const params = new URLSearchParams();
-  params.set("filter[is_state][_eq]", "false");
+  if (!options?.includeStates) {
+    params.set("filter[is_state][_eq]", "false");
+  }
   params.set("filter[enabled][_eq]", "true");
   if (filters?.minHiking) {
     params.set("filter[hiking_level][_gte]", String(filters.minHiking));
@@ -456,10 +466,13 @@ function mapCountry(item: UnknownRecord, locale: AppLocale): CountrySummary | nu
   return {
     id,
     name,
+    nameEn: asString(pick(item, ["name_en", "nameEn"])) ?? (locale === "en" ? name : undefined),
+    nameCs: asString(pick(item, ["name_cs", "nameCs"])) ?? (locale === "cs" ? name : undefined),
     slug,
     isoCode: asString(pick(item, ["iso_code", "isoCode"])),
     isState: asBoolean(pick(item, ["is_state", "isState"])) ?? false,
     enabled: asBoolean(pick(item, ["enabled"])) ?? true,
+    parentCountryId: asEntityId(pick(item, ["parent_country_id", "parentCountryId"])) ?? null,
     description: localizedText(item, locale, "description") ?? null,
     hikingLevel: asNumber(pick(item, ["hiking_level", "hikingLevel"])),
     beachLevel: asNumber(pick(item, ["beach_level", "beachLevel"])),
@@ -801,8 +814,11 @@ async function fetchCountryBySlugFromItems(
   };
 }
 
-function toCountriesEndpoint(filters?: CountryFilters): string {
-  const query = toCountryQueryString(filters);
+function toCountriesEndpoint(
+  filters?: CountryFilters,
+  options?: FetchCountriesOptions,
+): string {
+  const query = toCountryQueryString(filters, options);
   return `/items/countries${query}`;
 }
 
@@ -830,9 +846,10 @@ export function formatCurrency(
 export async function fetchCountries(
   filters?: CountryFilters,
   locale?: AppLocale,
+  options?: FetchCountriesOptions,
 ): Promise<CountrySummary[]> {
   const requestLocale = toRequestLocale(locale);
-  const endpoint = toCountriesEndpoint(filters);
+  const endpoint = toCountriesEndpoint(filters, options);
   const payload = await apiFetch<ApiEnvelope<unknown>>(endpoint);
   return mapCountriesFromEnvelope(payload, requestLocale);
 }
