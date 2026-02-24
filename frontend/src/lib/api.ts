@@ -142,9 +142,9 @@ export interface CountryCombination {
 }
 
 export const EXAMPLE_FETCH_QUERIES = {
-  homepageCountries: "/items/countries?filter[locale][_eq]=cs",
+  homepageCountries: "/items/countries",
   filteredCountries:
-    "/items/countries?filter[locale][_eq]=en&filter[hiking_level][_gte]=3&filter[pregnancy_safe][_eq]=true&filter[avg_cheap_flight_price][_lte]=500",
+    "/items/countries?filter[hiking_level][_gte]=3&filter[pregnancy_safe][_eq]=true&filter[avg_cheap_flight_price][_lte]=500",
   countryBySlug: "/api/countries/italy?locale=en",
   wonderBySlug: "/api/wonders/tre-cime-di-lavaredo?locale=en",
 } as const;
@@ -245,18 +245,10 @@ function withLocale(locale?: AppLocale): string {
 
 function toCountryQueryString(
   filters?: CountryFilters,
-  locale?: AppLocale,
-  options?: {
-    includeLocaleFilter?: boolean;
-  },
 ): string {
   const params = new URLSearchParams();
   params.set("filter[is_state][_eq]", "false");
   params.set("filter[enabled][_eq]", "true");
-
-  if (locale && options?.includeLocaleFilter !== false) {
-    params.set("filter[locale][_eq]", locale);
-  }
   if (filters?.minHiking) {
     params.set("filter[hiking_level][_gte]", String(filters.minHiking));
   }
@@ -458,29 +450,12 @@ function mapCountriesFromEnvelope(
   return countries.sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function shouldRetryWithoutLocaleFilter(error: unknown): boolean {
-  if (!isRecord(error)) return false;
-  const status = typeof error.status === "number" ? error.status : undefined;
-  if (status !== 400) return false;
-
-  const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
-  const responseBody =
-    typeof error.responseBody === "string" ? error.responseBody.toLowerCase() : "";
-  return message.includes("locale") || responseBody.includes("locale");
-}
-
 function toRequestLocale(locale?: AppLocale): AppLocale {
   return locale === "cs" ? "cs" : "en";
 }
 
-function toCountriesEndpoint(
-  filters?: CountryFilters,
-  locale?: AppLocale,
-  options?: {
-    includeLocaleFilter?: boolean;
-  },
-): string {
-  const query = toCountryQueryString(filters, locale, options);
+function toCountriesEndpoint(filters?: CountryFilters): string {
+  const query = toCountryQueryString(filters);
   return `/items/countries${query}`;
 }
 
@@ -510,22 +485,9 @@ export async function fetchCountries(
   locale?: AppLocale,
 ): Promise<CountrySummary[]> {
   const requestLocale = toRequestLocale(locale);
-  const endpoint = toCountriesEndpoint(filters, requestLocale, {
-    includeLocaleFilter: Boolean(locale),
-  });
-  try {
-    const payload = await apiFetch<ApiEnvelope<unknown>>(endpoint);
-    return mapCountriesFromEnvelope(payload, requestLocale);
-  } catch (error) {
-    if (locale && shouldRetryWithoutLocaleFilter(error)) {
-      const fallbackEndpoint = toCountriesEndpoint(filters, requestLocale, {
-        includeLocaleFilter: false,
-      });
-      const payload = await apiFetch<ApiEnvelope<unknown>>(fallbackEndpoint);
-      return mapCountriesFromEnvelope(payload, requestLocale);
-    }
-    throw error;
-  }
+  const endpoint = toCountriesEndpoint(filters);
+  const payload = await apiFetch<ApiEnvelope<unknown>>(endpoint);
+  return mapCountriesFromEnvelope(payload, requestLocale);
 }
 
 export async function fetchCountryBySlug(
